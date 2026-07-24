@@ -1,33 +1,30 @@
-# django-mosaic × ATProto — a stacked-PR learning journey
+# mosaicat — a stacked-PR learning journey
 
 This is a **guided course** disguised as a pull-request stack. It replays how
-`django-mosaic` grew from a plain Django blog (v0.1.9) into an ATProto-native
-personal AppView and, finally, a multi-tenant hosted service — one reviewable
-PR at a time.
+mosaicat grew from a plain Django blog into an ATProto-native personal site
+whose content lives in the repos — one reviewable PR at a time.
 
 You already write Python well. The goal here is twofold:
 
 1. **Understand ATProto deeply** — not "what's a DID" trivia, but the actual
    mechanics: how identity resolves, how records and blobs move over XRPC, how
-   OAuth is bound to a key with DPoP, how the firehose works, and *why* the
-   protocol is shaped the way it is.
+   OAuth is bound to a key with DPoP, how a quiet PDS works as a privacy
+   boundary, and *why* the protocol is shaped the way it is.
 2. **Sharpen your Python/Django** — each PR is chosen to also carry a
    non-obvious language or framework technique (state-only migrations,
-   `transaction.on_commit`, `sync_to_async`, dependency injection over
-   settings singletons, DPoP/JWT crypto, middleware-based multi-tenancy).
+   `transaction.on_commit`, dependency injection over settings singletons,
+   DPoP/JWT crypto, cached adapters over hostile record input).
 
 ## How to take the course
 
 Each PR is a branch stacked on the previous one. Review them **bottom-up, in
-order** (1 → 12); each builds on the last.
+order** (1 → 10); each builds on the last.
 
-- `learn/base` — the starting point: **django-mosaic 0.1.9** (the last released
-  version before any ATProto work) plus two pre-ATProto prep commits folded in
-  (a general code-review hardening pass and the martor editor migration, which
-  the bridge builds on). If you want to see those, read commits `f3088b6` and
-  `c0efc5e` on `main`.
-- `learn/01-atproto-bridge` … `learn/12-adversarial-review` — the twelve
-  lessons.
+- `main` — the clean starting tip: the security-review hardening pass
+  (`f3088b6`). No ATProto code yet.
+- `learn/base` — `main` plus the martor editor migration the bridge builds on,
+  and this syllabus. Diff `main...learn/base` to see exactly that gap.
+- `learn/01-atproto-bridge` … `learn/10-clean-slate` — the ten lessons.
 
 For each PR:
 
@@ -52,12 +49,10 @@ The lessons are *dense on purpose*. Read with the code open in a second pane.
 | 4 | [0.2.0 craft (interlude)](04-hardening.md) | *(light)* bounded render-path latency | **state-only FK migration**, optional extras, CI matrices, packaging |
 | 5 | [De-singletonize + preview](05-preview.md) | reading *any* actor's repo, DID-scoped caches, SSRF & the PDS | dependency injection vs settings singletons, throttling |
 | 6 | [OAuth client](06-oauth.md) | ATProto OAuth: PAR, PKCE, **DPoP**, `private_key_jwt`, JWKS, token rotation | the `cryptography`/`PyJWT` stack, row-locked refresh |
-| 7 | [Tenant registry + routing](07-tenancy.md) | DID as immutable identity, handle vs DID | Host-header middleware, multi-tenancy |
-| 8 | [Dashboard: settings-in-the-PDS](08-dashboard.md) | writing app config into the *user's* repo (no lock-in) | CSS custom properties, design-token validation |
-| 9 | [Custom domains + reports](09-domains.md) | domain-as-handle, on-demand TLS, operational verification | anti-abuse: honeypots, throttles, staleness gates |
-| 10 | [Composer + write path](10-composer.md) | minting TID rkeys locally, `com.atproto.repo.*`, sanitizing render | markdown sanitization, content-type hardening |
-| 11 | [Jetstream firehose](11-jetstream.md) | the firehose, Jetstream, cursors, at-scale cache invalidation | `asyncio`, `sync_to_async`, reconnect/backoff |
-| 12 | [Adversarial review](12-adversarial-review.md) | SSRF depth, handle-takeover, DID-scoping, `iss` validation | session fixation, URL namespacing, review as a discipline |
+| 7 | [The PDS-canonical read path](07-pds-canonical.md) | listRecords cursor walks, records as hostile input, publications partitioning a repo, blob serving | a cached adapter layer, dataclass views for templates, streaming proxies, degrade-don't-500 |
+| 8 | [The writing desk](08-authoring.md) | record-level writes, TID rkeys, blobs + content addressing, drafts as records | staff-gated views outside the admin, capability-token previews, image pipelines |
+| 9 | [The quiet repo](09-quiet-pds.md) | running a PDS nobody can reach, network isolation as the privacy boundary, PLC metadata | compose profiles, internal networks, env-driven settings, account bootstrap over the admin API |
+| 10 | [The clean slate](10-clean-slate.md) | the repo as the only content store, deterministic publication uris | deleting a data layer, config-backed template context, docs as product surface |
 
 ## A 10-minute ATProto primer (read once, before PR 1)
 
@@ -98,3 +93,67 @@ Official entry points worth bookmarking:
 > Each lesson repeats the exact links you need for *that* PR under a
 > **Grounding: official docs** heading, so you can always trace a claim back to
 > the source.
+
+## Talks, podcasts & further reading
+
+Every lesson ends with a **Watch & listen** section pointing at material for
+*that* PR. These are the course-wide ones — useful before you start, and worth
+returning to at the end when you can follow them as a practitioner.
+
+**Video & audio**
+
+- [ATmosphereConf talk archive](https://ionosphere.tv/talks) — the single best
+  resource here. Conference talks transcribed with timestamps and searchable by
+  concept, so you can jump to "DPoP" or "lexicon" instead of scrubbing.
+  Companion sites: [atmosphereconf.org](https://atmosphereconf.org/) and the
+  [Seattle 2025 playlist](https://www.youtube.com/playlist?list=PLyIg0j_mbb2tVegEMBg5ke2Z-1ALksU-I).
+- [AT Protocol Community channel](https://www.youtube.com/@atprotocoldev) —
+  meetup recordings and protocol talks.
+- [SE Radio 651: Paul Frazee on Bluesky and the AT Protocol](https://se-radio.net/2025/01/se-radio-651-paul-frazee-on-bluesky-and-the-at-protocol/)
+  — an hour with a protocol architect; the best pre-PR-1 listen.
+- [Mitigating Geopolitical Risks with Local-First Software and atproto](https://martin.kleppmann.com/2026/03/17/qcon-keynote-geopolitical-risk.html)
+  — Martin Kleppmann, QCon London 2026 (video via InfoQ). Best watched *after*
+  PR 10, when the argument is one you've implemented.
+
+**Written**
+
+- [Introduction to AT Protocol](https://mackuba.eu/2025/08/20/introduction-to-atproto/)
+  — mackuba. The clearest map of PDS / relay / AppView / firehose.
+- [Bluesky and the AT Protocol: Usable Decentralized Social Media](https://arxiv.org/abs/2402.03239)
+  — Kleppmann et al.; the peer-reviewed architecture paper.
+- [Jetstream: Shrinking the AT Proto Firehose by >99%](https://jazco.dev/2024/09/24/jetstream/)
+  — Jaz. Background for PR 7's consumer.
+- [You can just hack on ATProto](https://vickiboykis.com/2025/01/23/you-can-just-hack-on-atproto/)
+  — Vicki Boykis. Short, and a good antidote if the protocol feels intimidating.
+
+**Tools to keep open**
+
+- [pdsls.dev](https://pdsls.dev) — browse any repo's records by handle. You will
+  use this constantly from PR 1 onward.
+- [plc.directory](https://plc.directory) — read a real DID document.
+- [Constellation](https://constellation.microcosm.blue) — the backlink index PR 2
+  queries.
+
+> Links rot. Each entry names its **title and speaker/author** as well as its
+> URL, so anything that moves stays findable by search.
+
+## A note on the lesson structure
+
+Every lesson follows the same shape, so you can navigate them consistently:
+one-sentence version → learning objectives → grounding links → background →
+guided tour of the diff → deep dive(s) → design decisions → review questions →
+exercises → verify → watch & listen → glossary.
+
+**Commits are referenced relatively, never by hash.** Header **Diff:** lines
+give a branch range (`learn/A...learn/B`); lessons covering several commits
+(PRs 4 and 5) label them `~N`, meaning `<that branch>~N`. This is deliberate —
+an earlier draft of these lessons pinned raw hashes, the stack was rebased, and
+every single reference died. Relative refs survive a restack; hashes do not.
+The only hash quoted anywhere is `f3088b6` on `main`, which is not part of the
+rebased stack.
+
+To see the commits behind any lesson with their current hashes:
+
+```bash
+git log --oneline learn/<previous>..learn/<this-one>
+```
