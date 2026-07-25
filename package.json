@@ -1,0 +1,35 @@
+{
+  "name": "atmo",
+  "version": "0.0.0",
+  "description": "A static site generator for an ATProto repo",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "bin": {
+    "atmo": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "atmo": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check ."
+  },
+  "dependencies": {
+    "smol-toml": "^1.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
