@@ -14,6 +14,8 @@ import { ConfigError, loadConfig } from "./config.js";
 import { HttpError } from "./http.js";
 import { IdentityError } from "./identity.js";
 import { build } from "./build.js";
+import { GuardError, inspect, readManifest } from "./guard.js";
+import { loadSite } from "./site.js";
 import { pull } from "./pull.js";
 
 const USAGE = `atmo — a static site generator for an ATProto repo
@@ -21,10 +23,11 @@ const USAGE = `atmo — a static site generator for an ATProto repo
 usage:
   atmo pull    [--config <path>]   fetch records and blobs into the cache
   atmo build   [--config <path>]   render the cache into the output directory
-  atmo doctor  [--config <path>]   check config and report what would be fetched
+  atmo doctor  [--config <path>]   check config, cache and model health
 
 options:
   -c, --config <path>   config file (default: atmo.toml)
+  -f, --force           build even when a guard would refuse
   -h, --help            show this help
   -V, --version         show version
 `;
@@ -44,6 +47,7 @@ export async function main(argv: string[]): Promise<number> {
     args: argv,
     options: {
       config: { type: "string", short: "c", default: "atmo.toml" },
+      force: { type: "boolean", short: "f", default: false },
       help: { type: "boolean", short: "h", default: false },
       version: { type: "boolean", short: "V", default: false },
     },
@@ -72,7 +76,7 @@ export async function main(argv: string[]): Promise<number> {
 
     switch (command) {
       case "doctor":
-        return doctor(config);
+        return await doctor(config);
       case "pull": {
         const results = await pull(config, { log: (l) => process.stdout.write(`${l}\n`) });
         const total = results.reduce((n, r) => n + r.records, 0);
@@ -80,9 +84,12 @@ export async function main(argv: string[]): Promise<number> {
         return 0;
       }
       case "build": {
-        const result = await build(config, { log: (l) => process.stdout.write(`${l}\n`) });
-        for (const missing of result.site.missingSources) {
-          process.stderr.write(`atmo: warning: no cache for source "${missing}" — run pull\n`);
+        const result = await build(config, {
+          log: (l) => process.stdout.write(`${l}\n`),
+          force: values.force,
+        });
+        for (const finding of result.findings) {
+          process.stderr.write(`atmo: warning: ${finding.message}\n`);
         }
         return 0;
       }
@@ -96,11 +103,18 @@ export async function main(argv: string[]): Promise<number> {
       process.stderr.write(`atmo: ${e.message}\n`);
       return 3;
     }
+    if (e instanceof GuardError) {
+      for (const finding of e.findings) {
+        process.stderr.write(`atmo: ${finding.severity}: ${finding.message}\n`);
+      }
+      process.stderr.write("atmo: build refused; nothing was written\n");
+      return 4;
+    }
     throw e;
   }
 }
 
-function doctor(config: Awaited<ReturnType<typeof loadConfig>>): number {
+async function doctor(config: Awaited<ReturnType<typeof loadConfig>>): Promise<number> {
   process.stdout.write(`site:  ${config.site.title} <${config.site.base_url}>\n`);
   process.stdout.write(`cache: ${config.cache_dir}\nout:   ${config.out_dir}\n\n`);
 
@@ -116,7 +130,29 @@ function doctor(config: Awaited<ReturnType<typeof loadConfig>>): number {
   }
 
   process.stdout.write(`\nconfig is valid (${config.source.length} source(s))\n`);
-  return 0;
+
+  const site = await loadSite(config);
+  const previous = await readManifest(config.cache_dir);
+
+  process.stdout.write(
+    `\ncache:  ${site.pages.length} page(s), ${site.collections.length} collection(s), ` +
+      `${site.blobs.length} blob(s)\n`,
+  );
+  if (previous !== null) {
+    process.stdout.write(`last build: ${previous.pages} page(s) at ${previous.builtAt}\n`);
+  }
+
+  const findings = inspect(site, { previous });
+  if (findings.length === 0) {
+    process.stdout.write("\nno problems found\n");
+    return 0;
+  }
+
+  process.stdout.write("\n");
+  for (const finding of findings) {
+    process.stdout.write(`${finding.severity}: [${finding.code}] ${finding.message}\n`);
+  }
+  return findings.some((f) => f.severity === "error") ? 1 : 0;
 }
 
 // Only run when invoked as a program, so tests can import `main` freely.
