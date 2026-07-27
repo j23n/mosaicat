@@ -72,8 +72,18 @@ const SourceSchema = z
       "identity would fail at fetch time instead of never existing)",
   });
 
+const ReactionsSchema = z.object({
+  /** `client` fetches in the browser; `off` emits nothing. */
+  mode: z.enum(["client", "off"]).default("client"),
+  /** Bluesky's public AppView: counts and the reply thread. */
+  appview: z.string().url().default("https://public.api.bsky.app"),
+  /** Backlink index: who, in any app, links to this target. */
+  constellation: z.string().url().default("https://constellation.microcosm.blue"),
+});
+
 const ConfigSchema = z.object({
   site: SiteSchema,
+  reactions: ReactionsSchema.default({}),
   source: z.array(SourceSchema).min(1),
   cache_dir: z.string().default(".atmo/cache"),
   out_dir: z.string().default("dist"),
@@ -83,6 +93,7 @@ const ConfigSchema = z.object({
 
 export type Site = z.infer<typeof SiteSchema>;
 export type Source = z.infer<typeof SourceSchema>;
+export type Reactions = z.infer<typeof ReactionsSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 export class ConfigError extends Error {}
