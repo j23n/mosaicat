@@ -11,6 +11,7 @@ import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { BLOB_DIR, blobFilename } from "./blob.js";
 import { dirname, join } from "node:path";
 import type { Config } from "./config.js";
+import { collectionHeading, templateCandidates } from "./collection.js";
 import { renderFeed, renderRobots, renderSitemap } from "./feed.js";
 import { createRenderer, type Renderer } from "./render.js";
 import { BUILTIN_TEMPLATES } from "./render.js";
@@ -102,6 +103,26 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
       renderer.page({
         title: `#${tag.tag.name} — ${site.config.site.title}`,
         canonical: absolute(config.site.base_url, tag.url),
+        site: site.config.site,
+        body,
+      }),
+    );
+  }
+
+  for (const collection of site.collections) {
+    const template = renderer.findTemplate(templateCandidates(collection.nsid));
+    if (template === null) continue;
+    const heading = collectionHeading(collection.nsid);
+    const body = renderer.render(template, {
+      items: collection.items,
+      nsid: collection.nsid,
+      heading,
+    });
+    await emitPage(
+      collection.url,
+      renderer.page({
+        title: `${heading} — ${site.config.site.title}`,
+        canonical: absolute(config.site.base_url, collection.url),
         site: site.config.site,
         body,
       }),

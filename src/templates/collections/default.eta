@@ -1,0 +1,30 @@
+<%
+/* The fallback renderer: used for any NSID without a template of its own.
+   It never assumes a field exists, so a lexicon invented tomorrow still
+   produces a page today. */
+%>
+<h1 class="list-heading"><%= it.heading %></h1>
+<p class="collection-nsid"><code><%= it.nsid %></code></p>
+
+<% if (!it.items.length) { %>
+<p class="empty">No records in this collection.</p>
+<% } %>
+
+<ul class="collection-list">
+  <% it.items.forEach(function (item) { %>
+  <li class="collection-item">
+    <h2><%= item.label %></h2>
+    <% if (item.at) { %>
+    <p class="post-meta">
+      <time datetime="<%= item.at.toISOString() %>"><%= it.formatDate(item.at) %></time>
+    </p>
+    <% } %>
+    <dl class="record-fields">
+      <% item.fields.forEach(function (field) { %>
+      <dt><%= field.key %></dt>
+      <dd><%= field.value %></dd>
+      <% }) %>
+    </dl>
+  </li>
+  <% }) %>
+</ul>
