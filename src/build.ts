@@ -8,6 +8,7 @@
  */
 
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { BLOB_DIR, blobFilename } from "./blob.js";
 import { dirname, join } from "node:path";
 import type { Config } from "./config.js";
 import { renderFeed, renderRobots, renderSitemap } from "./feed.js";
@@ -117,6 +118,20 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   await mkdir(dirname(cssTarget), { recursive: true });
   await cp(cssSource, cssTarget);
   written.push("/assets/atmo.css");
+
+  // Blobs: copy from the cache rather than refetching. `build` has no network.
+  for (const blob of site.blobs) {
+    const name = blobFilename(blob.cid, blob.mimeType);
+    const target = join(config.out_dir, "assets", "blobs", name);
+    await mkdir(dirname(target), { recursive: true });
+    try {
+      await cp(join(config.cache_dir, BLOB_DIR, name), target);
+      written.push(`/assets/blobs/${name}`);
+    } catch {
+      // Recorded in the cache but missing on disk: skip it. A broken image is
+      // survivable; refusing to build over one is not proportionate.
+    }
+  }
 
   log(`${written.length} file(s) -> ${config.out_dir}`);
   return { site, written };

@@ -9,10 +9,11 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { BlobRecord } from "./blob.js";
 import type { RawRecord } from "./repo.js";
 
 /** Bumped when the on-disk shape changes; a mismatch is treated as a miss. */
-export const CACHE_VERSION = 1;
+export const CACHE_VERSION = 2;
 
 export interface SourceCache {
   version: number;
@@ -23,6 +24,8 @@ export interface SourceCache {
   fetchedAt: string;
   /** Records by collection NSID. */
   collections: Record<string, RawRecord[]>;
+  /** Blobs downloaded alongside them, so `build` knows each CID's type. */
+  blobs: BlobRecord[];
 }
 
 function cachePath(cacheDir: string, sourceName: string): string {
