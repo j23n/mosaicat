@@ -13,6 +13,7 @@ import { pathToFileURL } from "node:url";
 import { ConfigError, loadConfig } from "./config.js";
 import { HttpError } from "./http.js";
 import { IdentityError } from "./identity.js";
+import { build } from "./build.js";
 import { pull } from "./pull.js";
 
 const USAGE = `atmo — a static site generator for an ATProto repo
@@ -78,10 +79,13 @@ export async function main(argv: string[]): Promise<number> {
         process.stdout.write(`\npulled ${total} record(s) into ${config.cache_dir}\n`);
         return 0;
       }
-      case "build":
-        // Implemented in learn/d-emit-a-site.
-        process.stderr.write(`atmo: "build" is not implemented yet\n`);
-        return 1;
+      case "build": {
+        const result = await build(config, { log: (l) => process.stdout.write(`${l}\n`) });
+        for (const missing of result.site.missingSources) {
+          process.stderr.write(`atmo: warning: no cache for source "${missing}" — run pull\n`);
+        }
+        return 0;
+      }
     }
   } catch (e) {
     if (e instanceof ConfigError) {

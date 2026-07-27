@@ -1,0 +1,42 @@
+<% if (it.heading) { %>
+<h1 class="list-heading"><%= it.heading %></h1>
+<% } %> <% if (!it.pages.length) { %>
+<p class="empty">Nothing here yet.</p>
+<% } %>
+
+<ul class="post-list">
+  <% it.pages.forEach(function (page) { %>
+  <li class="post-summary h-entry">
+    <h2><a class="p-name u-url" href="<%= page.url %>"><%= page.doc.title || "Untitled" %></a></h2>
+    <p class="post-meta">
+      <time class="dt-published" datetime="<%= page.doc.publishedAt.toISOString() %>">
+        <%= it.formatDate(page.doc.publishedAt) %>
+      </time>
+    </p>
+    <% if (page.summary) { %>
+    <p class="p-summary"><%= page.summary %></p>
+    <% } %>
+  </li>
+  <% }) %>
+</ul>
+
+<% if (it.pagination && it.pagination.totalPages > 1) { %>
+<nav class="pagination" aria-label="Pagination">
+  <% if (it.pagination.previousUrl) { %>
+  <a rel="prev" href="<%= it.pagination.previousUrl %>">← Newer</a>
+  <% } %>
+  <span>Page <%= it.pagination.number %> of <%= it.pagination.totalPages %></span>
+  <% if (it.pagination.nextUrl) { %>
+  <a rel="next" href="<%= it.pagination.nextUrl %>">Older →</a>
+  <% } %>
+</nav>
+<% } %> <% if (it.tags && it.tags.length) { %>
+<nav class="tag-cloud">
+  <h2>Topics</h2>
+  <ul>
+    <% it.tags.forEach(function (tag) { %>
+    <li><a href="<%= tag.url %>">#<%= tag.tag.name %> (<%= tag.pages.length %>)</a></li>
+    <% }) %>
+  </ul>
+</nav>
+<% } %>

@@ -57,6 +57,12 @@ const SourceSchema = z
     /** `public` emits normally; `encrypted` routes through the private path. */
     visibility: z.enum(["public", "encrypted"]).default("public"),
 
+    /**
+     * URL prefix this source's documents render under. Defaults to the source
+     * name, so two sources can never silently collide.
+     */
+    path_prefix: z.string().optional(),
+
     /** Cap on records fetched per collection, so one repo can't stall a build. */
     max_records: z.number().int().positive().default(1000),
   })
@@ -71,6 +77,8 @@ const ConfigSchema = z.object({
   source: z.array(SourceSchema).min(1),
   cache_dir: z.string().default(".atmo/cache"),
   out_dir: z.string().default("dist"),
+  /** Documents per index page. */
+  page_size: z.number().int().positive().default(10),
 });
 
 export type Site = z.infer<typeof SiteSchema>;

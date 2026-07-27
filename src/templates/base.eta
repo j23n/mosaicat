@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= it.title %></title>
+    <% if (it.description) { %>
+    <meta name="description" content="<%= it.description %>" />
+    <% } %> <% if (it.canonical) { %>
+    <link rel="canonical" href="<%= it.canonical %>" />
+    <% } %> <% if (it.noindex) { %>
+    <meta name="robots" content="noindex, nofollow" />
+    <% } %>
+    <link rel="alternate" type="application/rss+xml" title="<%= it.site.title %>" href="/feed.xml" />
+    <link rel="stylesheet" href="/assets/atmo.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-title" href="/"><%= it.site.title %></a>
+      <% if (it.site.description) { %>
+      <p class="site-description"><%= it.site.description %></p>
+      <% } %>
+    </header>
+
+    <main><%~ it.body %></main>
+
+    <footer class="site-footer">
+      <p>
+        Built from
+        <a href="https://atproto.com">the ATmosphere</a> with
+        <a href="https://github.com/j23n/mosaicat">atmo</a>.
+      </p>
+    </footer>
+  </body>
+</html>

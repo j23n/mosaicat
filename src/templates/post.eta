@@ -1,0 +1,33 @@
+<article class="post h-entry">
+  <header class="post-header">
+    <h1 class="p-name"><%= it.page.doc.title || "Untitled" %></h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="<%= it.page.doc.publishedAt.toISOString() %>">
+        <%= it.formatDate(it.page.doc.publishedAt) %>
+      </time>
+      <% if (it.page.doc.updatedAt.getTime() !== it.page.doc.publishedAt.getTime()) { %>
+      <span class="post-updated">
+        updated
+        <time class="dt-updated" datetime="<%= it.page.doc.updatedAt.toISOString() %>">
+          <%= it.formatDate(it.page.doc.updatedAt) %>
+        </time>
+      </span>
+      <% } %>
+    </p>
+    <% if (it.page.doc.tags.length) { %>
+    <ul class="tag-list">
+      <% it.page.doc.tags.forEach(function (tag) { %>
+      <li><a class="p-category" href="/tags/<%= tag.slug %>/">#<%= tag.name %></a></li>
+      <% }) %>
+    </ul>
+    <% } %>
+  </header>
+
+  <div class="post-body e-content"><%~ it.page.html %></div>
+
+  <footer class="post-footer">
+    <p class="post-source">
+      <a class="u-url" href="<%= it.atUri %>">This post as a record</a>
+    </p>
+  </footer>
+</article>
