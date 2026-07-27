@@ -16,7 +16,9 @@
   "scripts": {
     "build": "tsc && npm run bundle && node -e \"require('fs').cpSync('src/templates','dist/templates',{recursive:true})\"",
     "bundle": "esbuild src/client/decrypt.ts --bundle --format=esm --minify --outfile=src/templates/decrypt.js",
+    "preatmo": "npm run bundle",
     "atmo": "tsx src/cli.ts",
+    "pretest": "npm run bundle",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json",

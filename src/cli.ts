@@ -15,6 +15,7 @@ import { HttpError } from "./http.js";
 import { IdentityError } from "./identity.js";
 import { build } from "./build.js";
 import { GuardError, inspect, readManifest } from "./guard.js";
+import { init, InitError } from "./init.js";
 import { PrivateError } from "./private.js";
 import { loadSite } from "./site.js";
 import { pull } from "./pull.js";
@@ -22,22 +23,25 @@ import { pull } from "./pull.js";
 const USAGE = `atmo — a static site generator for an ATProto repo
 
 usage:
+  atmo init    <handle>            create atmo.toml in the current directory
   atmo pull    [--config <path>]   fetch records and blobs into the cache
   atmo build   [--config <path>]   render the cache into the output directory
   atmo doctor  [--config <path>]   check config, cache and model health
 
 options:
   -c, --config <path>   config file (default: atmo.toml)
-  -f, --force           build even when a guard would refuse
+  -f, --force           build even when a guard would refuse; overwrite on init
+      --title <text>    site title (init)
+      --base-url <url>  public origin (init)
   -h, --help            show this help
   -V, --version         show version
 `;
 
 const VERSION = "0.0.0";
 
-type Command = "pull" | "build" | "doctor";
+type Command = "init" | "pull" | "build" | "doctor";
 
-const COMMANDS = new Set<Command>(["pull", "build", "doctor"]);
+const COMMANDS = new Set<Command>(["init", "pull", "build", "doctor"]);
 
 function isCommand(value: string): value is Command {
   return COMMANDS.has(value as Command);
@@ -49,6 +53,8 @@ export async function main(argv: string[]): Promise<number> {
     options: {
       config: { type: "string", short: "c", default: "atmo.toml" },
       force: { type: "boolean", short: "f", default: false },
+      title: { type: "string" },
+      "base-url": { type: "string" },
       help: { type: "boolean", short: "h", default: false },
       version: { type: "boolean", short: "V", default: false },
     },
@@ -70,6 +76,27 @@ export async function main(argv: string[]): Promise<number> {
   if (!isCommand(command)) {
     process.stderr.write(`atmo: unknown command "${command}"\n\n${USAGE}`);
     return 1;
+  }
+
+  // `init` runs before a config exists, so it is handled ahead of the load.
+  if (command === "init") {
+    try {
+      const written = await init(process.cwd(), {
+        handle: positionals[1] ?? "",
+        force: values.force,
+        ...(values.title !== undefined ? { title: values.title } : {}),
+        ...(values["base-url"] !== undefined ? { baseUrl: values["base-url"] } : {}),
+      });
+      for (const file of written) process.stdout.write(`created ${file}\n`);
+      process.stdout.write("\nnext: atmo pull && atmo build\n");
+      return 0;
+    } catch (e) {
+      if (e instanceof InitError) {
+        process.stderr.write(`atmo: ${e.message}\n`);
+        return 1;
+      }
+      throw e;
+    }
   }
 
   try {

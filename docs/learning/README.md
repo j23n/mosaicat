@@ -49,18 +49,18 @@ the same lexicon, so the only part worth owning is the rendering.
 
 ## The map
 
-|     | Branch                    | Adds                         | ATProto                                                   | Craft                                                               |
-| --- | ------------------------- | ---------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
-| a   | [skeleton](a-skeleton.md) | project, CLI, config, CI     | the primer                                                | config as the whole public surface; failing at load, not at runtime |
-| b   | read-a-repo               | `atmo pull`                  | handle→DID→PDS, `listRecords` cursor walks, AT-URIs, TIDs | SSRF-safe fetching, timeouts, fixture-based network tests           |
-| c   | records-are-hostile       | typed `Document` model       | `site.standard.document`, publications, ordering          | tolerant parsing, fuzz + golden tests                               |
-| d   | emit-a-site               | `atmo build` → `dist/`       | _(light)_                                                 | SSG core, routes-as-paths, template registry by NSID                |
-| e   | blobs-as-assets           | local images                 | `getBlob`, CIDs, content addressing                       | why a CID-keyed cache never needs invalidating                      |
-| f   | personal-appview          | multi-source, any collection | lexicons you didn't write; NSID as contract               | config-driven pipelines, generic fallback rendering                 |
-| g   | reactions-in-browser      | live comments                | AppView vs backlink index                                 | progressive enhancement, CORS, browser tests                        |
-| h   | builds-you-can-trust      | cache, guards, `atmo doctor` | PDS availability, honestly                                | build-failure taxonomy; why a static build is _less_ forgiving      |
-| i   | private-by-capability     | encrypted private posts      | a source with no public identity                          | using vetted crypto; capability URLs; stating a threat model        |
-| j   | ship-it                   | packaging, action, docs      | —                                                         | distribution, docs as product surface                               |
+|     | Branch                                              | Adds                         | ATProto                                                   | Craft                                                               |
+| --- | --------------------------------------------------- | ---------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
+| a   | [skeleton](a-skeleton.md)                           | project, CLI, config, CI     | the primer                                                | config as the whole public surface; failing at load, not at runtime |
+| b   | [read-a-repo](b-read-a-repo.md)                     | `atmo pull`                  | handle→DID→PDS, `listRecords` cursor walks, AT-URIs, TIDs | SSRF-safe fetching, timeouts, fixture-based network tests           |
+| c   | [records-are-hostile](c-records-are-hostile.md)     | typed `Document` model       | `site.standard.document`, publications, ordering          | tolerant parsing, fuzz + golden tests                               |
+| d   | [emit-a-site](d-emit-a-site.md)                     | `atmo build` → `dist/`       | _(light)_                                                 | SSG core, routes-as-paths, template registry by NSID                |
+| e   | [blobs-as-assets](e-blobs-as-assets.md)             | local images                 | `getBlob`, CIDs, content addressing                       | why a CID-keyed cache never needs invalidating                      |
+| f   | [personal-appview](f-personal-appview.md)           | multi-source, any collection | lexicons you didn't write; NSID as contract               | config-driven pipelines, generic fallback rendering                 |
+| g   | [reactions-in-browser](g-reactions-in-browser.md)   | live comments                | AppView vs backlink index                                 | progressive enhancement, CORS, browser tests                        |
+| h   | [builds-you-can-trust](h-builds-you-can-trust.md)   | cache, guards, `atmo doctor` | PDS availability, honestly                                | build-failure taxonomy; why a static build is _less_ forgiving      |
+| i   | [private-by-capability](i-private-by-capability.md) | encrypted private posts      | a source with no public identity                          | using vetted crypto; capability URLs; stating a threat model        |
+| j   | [ship-it](j-ship-it.md)                             | packaging, action, docs      | —                                                         | distribution, docs as product surface                               |
 
 ## A 10-minute ATProto primer (read once, before `b`)
 

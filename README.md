@@ -7,32 +7,77 @@ Personal Data Server — posts, and anything else the account's other apps have
 written there. No database, no server, no CMS.
 
 ```bash
-atmo pull      # fetch records + blobs from the PDS into a local cache
-atmo build     # render the cache into ./dist
+npm install -g atmo
+
+atmo init you.example.com     # writes atmo.toml
+atmo pull                     # fetch records + blobs into .atmo/cache
+atmo build                    # render the cache into ./dist
 ```
 
 ## Why
 
 Your writing already lives in your repo. `site.standard.document` is a shared
-lexicon that Leaflet, pckt, Offprint, and others already read and write — so the
-content is portable whether or not this tool exists.
+lexicon that [Leaflet](https://leaflet.pub), pckt, Offprint and others already
+read and write — so your content is portable whether or not this tool exists.
 
-That leaves rendering as the only thing worth owning. `atmo` is the renderer:
+That leaves rendering as the only part worth owning:
 
 - **The repo is the only content store.** No local models, no sync, no drift.
-- **Authoring is someone else's job.** Write in Leaflet or pckt from a browser
-  or phone, or publish markdown with a CLI. `atmo` never writes to your repo.
-- **Nothing at request time.** Blobs become local assets, so a slow or
-  unreachable PDS can't affect a reader.
-- **Reactions come from the browser.** Replies and likes are fetched
-  client-side, so they stay live without touching the build.
-- **Private posts are optional**, encrypted at build time with a vetted
-  implementation and served at unguessable paths.
+- **Authoring is someone else's job.** Write in a browser or on your phone with
+  any standard.site app, or publish markdown with
+  [Sequoia](https://sequoia.pub/). `atmo` never writes to your repo, so it
+  needs no credentials and no OAuth.
+- **Nothing at request time.** Blobs are downloaded and served locally, so a
+  slow or unreachable PDS can't affect a reader.
+- **Reactions come from the browser.** Bluesky replies and cross-app backlinks
+  are fetched client-side, so they stay live without touching the build.
+- **Private posts are optional**, encrypted at build time with
+  [age](https://age-encryption.org/) and served at unguessable derived paths.
 
-## Status
+## Rendering more than posts
 
-Early. Being built in the open as a stacked series of reviewable branches —
-see [`docs/learning/`](docs/learning/) once the first lands.
+Your repo holds records other apps wrote for you. Add the NSID and they get a
+page:
+
+```toml
+[[source]]
+name        = "books"
+handle      = "you.example.com"
+collections = ["buzz.bookhive.book"]
+```
+
+A lexicon `atmo` has never seen still renders, through a generic template. To
+style one, add `templates/collections/<nsid>.eta` — the filename is the whole
+registration mechanism.
+
+## Customising
+
+Templates resolve from your `templates/` directory first, then the built-in
+defaults. Override one file and everything else keeps working:
+
+```
+templates/post.eta            one page type
+templates/atmo.css            the stylesheet
+templates/base.eta            the layout
+templates/collections/…       per-lexicon renderers
+```
+
+## Commands
+
+|                      |                                                                      |
+| -------------------- | -------------------------------------------------------------------- |
+| `atmo init <handle>` | write `atmo.toml`                                                    |
+| `atmo pull`          | the only command that touches the network                            |
+| `atmo build`         | the only command that writes output; refuses if the site looks wrong |
+| `atmo doctor`        | config, cache and model health                                       |
+
+Exit codes: `2` bad config, `3` network, `4` build refused, `5` missing
+passphrase.
+
+## Docs
+
+- [Deploying](docs/deploy.md) — CI, hosting, freshness, backups
+- [The course](docs/learning/) — how this was built, one branch at a time
 
 ## License
 
