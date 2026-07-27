@@ -15,6 +15,7 @@ import { HttpError } from "./http.js";
 import { IdentityError } from "./identity.js";
 import { build } from "./build.js";
 import { GuardError, inspect, readManifest } from "./guard.js";
+import { PrivateError } from "./private.js";
 import { loadSite } from "./site.js";
 import { pull } from "./pull.js";
 
@@ -102,6 +103,10 @@ export async function main(argv: string[]): Promise<number> {
     if (e instanceof IdentityError || e instanceof HttpError) {
       process.stderr.write(`atmo: ${e.message}\n`);
       return 3;
+    }
+    if (e instanceof PrivateError) {
+      process.stderr.write(`atmo: ${e.message}\n`);
+      return 5;
     }
     if (e instanceof GuardError) {
       for (const finding of e.findings) {

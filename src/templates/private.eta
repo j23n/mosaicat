@@ -1,0 +1,10 @@
+<div
+  class="private"
+  data-atmo-private
+  data-mode="<%= it.mode %>"
+  data-wrapped="<%= it.wrapped %>"
+>
+  <h1><%= it.heading %></h1>
+  <noscript><p>These pages need JavaScript to decrypt.</p></noscript>
+</div>
+<script type="module" src="/assets/decrypt.js"></script>

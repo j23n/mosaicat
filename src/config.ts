@@ -81,8 +81,16 @@ const ReactionsSchema = z.object({
   constellation: z.string().url().default("https://constellation.microcosm.blue"),
 });
 
+const PrivateSchema = z.object({
+  /** Where the age identity is kept between builds, so paths stay stable. */
+  identity_file: z.string().default(".atmo/identity"),
+  /** Public entry point: a passphrase prompt containing no post URLs. */
+  entry_path: z.string().default("/private/"),
+});
+
 const ConfigSchema = z.object({
   site: SiteSchema,
+  private: PrivateSchema.default({}),
   reactions: ReactionsSchema.default({}),
   source: z.array(SourceSchema).min(1),
   cache_dir: z.string().default(".atmo/cache"),
@@ -94,6 +102,7 @@ const ConfigSchema = z.object({
 export type Site = z.infer<typeof SiteSchema>;
 export type Source = z.infer<typeof SourceSchema>;
 export type Reactions = z.infer<typeof ReactionsSchema>;
+export type PrivateConfig = z.infer<typeof PrivateSchema>;
 export type Config = z.infer<typeof ConfigSchema>;
 
 export class ConfigError extends Error {}
