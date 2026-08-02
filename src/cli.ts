@@ -11,6 +11,9 @@
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { ConfigError, loadConfig } from "./config.js";
+import { HttpError } from "./http.js";
+import { IdentityError } from "./identity.js";
+import { pull } from "./pull.js";
 
 const USAGE = `atmo — a static site generator for an ATProto repo
 
@@ -69,16 +72,25 @@ export async function main(argv: string[]): Promise<number> {
     switch (command) {
       case "doctor":
         return doctor(config);
-      case "pull":
+      case "pull": {
+        const results = await pull(config, { log: (l) => process.stdout.write(`${l}\n`) });
+        const total = results.reduce((n, r) => n + r.records, 0);
+        process.stdout.write(`\npulled ${total} record(s) into ${config.cache_dir}\n`);
+        return 0;
+      }
       case "build":
-        // Implemented in learn/b-read-a-repo and learn/d-emit-a-site.
-        process.stderr.write(`atmo: "${command}" is not implemented yet\n`);
+        // Implemented in learn/d-emit-a-site.
+        process.stderr.write(`atmo: "build" is not implemented yet\n`);
         return 1;
     }
   } catch (e) {
     if (e instanceof ConfigError) {
       process.stderr.write(`atmo: ${e.message}\n`);
       return 2;
+    }
+    if (e instanceof IdentityError || e instanceof HttpError) {
+      process.stderr.write(`atmo: ${e.message}\n`);
+      return 3;
     }
     throw e;
   }
