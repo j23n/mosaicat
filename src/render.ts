@@ -25,6 +25,8 @@ export interface Renderer {
   page(context: PageContext): string;
   /** Absolute path of a template file, honouring overrides. */
   resolveTemplate(name: string): string;
+  /** First of `names` that exists, or null. Drives the NSID registry. */
+  findTemplate(names: string[]): string | null;
 }
 
 export interface PageContext {
@@ -66,9 +68,18 @@ export function createRenderer(projectRoot = "."): Renderer {
     return eta.renderString(readTemplate(path), { ...context, formatDate });
   };
 
+  const findTemplate = (names: string[]): string | null => {
+    for (const name of names) {
+      for (const root of roots) {
+        if (existsSync(join(root, name))) return name;
+      }
+    }
+    return null;
+  };
+
   const page = (context: PageContext): string => render("base.eta", { ...context });
 
-  return { render, page, resolveTemplate };
+  return { render, page, resolveTemplate, findTemplate };
 }
 
 const cache = new Map<string, string>();

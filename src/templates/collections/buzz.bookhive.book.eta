@@ -1,0 +1,26 @@
+<%
+/* A worked example of a template for a lexicon we did not design.
+   Copy this shape to add your own: collections/<nsid>.eta. */
+%>
+<h1 class="list-heading"><%= it.heading %></h1>
+
+<ul class="collection-list book-list">
+  <% it.items.forEach(function (item) { %>
+  <li class="book">
+    <h2><%= item.value.title || item.label %></h2>
+    <% if (item.value.authors) { %>
+    <p class="book-author"><%= item.value.authors %></p>
+    <% } %>
+    <p class="post-meta">
+      <% if (item.value.status) { %>
+      <span class="book-status"><%= String(item.value.status).split('#').pop() %></span>
+      <% } %> <% if (item.at) { %>
+      <time datetime="<%= item.at.toISOString() %>"><%= it.formatDate(item.at) %></time>
+      <% } %>
+    </p>
+    <% if (item.value.review) { %>
+    <p class="book-review"><%= item.value.review %></p>
+    <% } %>
+  </li>
+  <% }) %>
+</ul>

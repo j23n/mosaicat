@@ -8,6 +8,7 @@
 
 import type { Config, Source } from "./config.js";
 import { rewriteBlobUrls, type BlobRecord } from "./blob.js";
+import { collectItems, type CollectionPage } from "./collection.js";
 import { readSourceCache } from "./cache.js";
 import { DOCUMENT_NSID } from "./config.js";
 import { collectDocuments, type Document, type Tag } from "./document.js";
@@ -50,6 +51,8 @@ export interface SiteModel {
   index: Paginated[];
   /** Every blob available in the cache, keyed by CID. */
   blobs: BlobRecord[];
+  /** Pages for collections other than site.standard.document. */
+  collections: CollectionPage[];
   /** Sources that produced no cache entry at all. */
   missingSources: string[];
 }
@@ -108,6 +111,7 @@ export async function loadSite(config: Config): Promise<SiteModel> {
   const missingSources: string[] = [];
   const blobs: BlobRecord[] = [];
   const mimeByCid = new Map<string, string>();
+  const collections: CollectionPage[] = [];
 
   for (const source of config.source) {
     const cache = await readSourceCache(config.cache_dir, source.name);
@@ -121,6 +125,18 @@ export async function loadSite(config: Config): Promise<SiteModel> {
         mimeByCid.set(blob.cid, blob.mimeType);
         blobs.push(blob);
       }
+    }
+
+    // Anything that is not a document renders through the NSID registry.
+    for (const [nsid, records] of Object.entries(cache.collections)) {
+      if (nsid === DOCUMENT_NSID) continue;
+      if (source.visibility === "encrypted") continue;
+      collections.push({
+        source: source.name,
+        nsid,
+        url: `${pathPrefix(source)}/${nsid}/`,
+        items: collectItems(records),
+      });
     }
 
     const records = cache.collections[DOCUMENT_NSID] ?? [];
@@ -163,6 +179,7 @@ export async function loadSite(config: Config): Promise<SiteModel> {
     tags,
     index: paginate(publicPages, config.page_size),
     blobs,
+    collections,
     missingSources,
   };
 }
