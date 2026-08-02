@@ -10,6 +10,7 @@
     <link rel="canonical" href="<%= it.canonical %>" />
     <% } %> <% if (it.noindex) { %>
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
     <% } %>
     <link rel="alternate" type="application/rss+xml" title="<%= it.site.title %>" href="/feed.xml" />
     <link rel="stylesheet" href="/assets/atmo.css" />

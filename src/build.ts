@@ -22,6 +22,13 @@ import {
   writeManifest,
   type GuardFinding,
 } from "./guard.js";
+import {
+  emitPrivate,
+  loadSiteKeys,
+  passphraseFromEnv,
+  PrivateError,
+  privatePagesOf,
+} from "./private.js";
 import { createRenderer, type Renderer } from "./render.js";
 import { BUILTIN_TEMPLATES } from "./render.js";
 import { absolute, loadSite, type Page, type SiteModel } from "./site.js";
@@ -166,6 +173,26 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   await mkdir(dirname(cssTarget), { recursive: true });
   await cp(cssSource, cssTarget);
   written.push("/assets/atmo.css");
+
+  const privatePages = privatePagesOf(config, site);
+  if (privatePages.length > 0) {
+    const passphrase = passphraseFromEnv();
+    if (passphrase === null) {
+      throw new PrivateError(
+        `${privatePages.length} private page(s) to encrypt but $ATMO_PASSPHRASE is not set`,
+      );
+    }
+    const keys = await loadSiteKeys(config, passphrase);
+    const emitted = await emitPrivate(config, site, renderer, keys, privatePages);
+    written.push(...emitted.written);
+
+    const decryptSource = renderer.resolveTemplate("decrypt.js");
+    const decryptTarget = join(config.out_dir, "assets", "decrypt.js");
+    await mkdir(dirname(decryptTarget), { recursive: true });
+    await cp(decryptSource, decryptTarget);
+    written.push("/assets/decrypt.js");
+    log(`${emitted.posts} private page(s) encrypted`);
+  }
 
   if (config.reactions.mode === "client") {
     const source = renderer.resolveTemplate("reactions.js");
