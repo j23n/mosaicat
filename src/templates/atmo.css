@@ -78,6 +78,28 @@ h2 {
 .post-list a:hover {
   text-decoration: underline;
 }
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+.site-nav a {
+  text-decoration: none;
+}
+.site-nav a:hover {
+  text-decoration: underline;
+}
+.post-cover {
+  margin: 2rem 0 0;
+}
+.post-cover img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
 .post-body {
   margin-top: 2rem;
 }

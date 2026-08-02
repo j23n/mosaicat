@@ -31,7 +31,7 @@ const doc = (n: number, extra: Record<string, unknown> = {}): RawRecord => ({
   },
 });
 
-async function project(records: RawRecord[], sources = 1): Promise<Config> {
+async function project(records: RawRecord[], sources = 1, sourceToml = ""): Promise<Config> {
   const dir = await mkdtemp(join(tmpdir(), "atmo-guard-"));
   const extra = sources > 1 ? '\n[[source]]\nname = "second"\nhandle = "b.example.com"\n' : "";
   const config = {
@@ -43,6 +43,7 @@ base_url = "https://example.com"
 [[source]]
 name = "posts"
 handle = "you.example.com"
+${sourceToml}
 ${extra}
 `),
     cache_dir: join(dir, "cache"),
@@ -70,6 +71,7 @@ const model = (over: Partial<SiteModel>): SiteModel =>
     blobs: [],
     missingSources: [],
     skipped: 0,
+    sourceStats: [],
     ...over,
   }) as SiteModel;
 
@@ -87,6 +89,41 @@ describe("inspect", () => {
   it("accepts an empty document set when a collection exists", () => {
     const findings = inspect(model({ collections: [{}] as never }));
     expect(findings.some((f) => f.code === "empty-site")).toBe(false);
+  });
+
+  // Records in, nothing out: the publication filter (or a parse failure)
+  // swallowed a whole source and the empty-site check may not notice.
+  it("errors when a source's records all render to nothing", () => {
+    const stat = { source: "posts", rawDocuments: 12, unparseable: 0, pages: 0 };
+    const findings = inspect(model({ collections: [{}] as never, sourceStats: [stat] }));
+    const finding = findings.find((f) => f.code === "no-renderable-documents");
+    expect(finding).toMatchObject({ severity: "error" });
+    expect(finding!.message).toContain("publication");
+  });
+
+  it("mentions unparseable records when they explain the loss", () => {
+    const stat = { source: "posts", rawDocuments: 3, unparseable: 3, pages: 0 };
+    const findings = inspect(model({ collections: [{}] as never, sourceStats: [stat] }));
+    const finding = findings.find((f) => f.code === "no-renderable-documents")!;
+    expect(finding.message).toContain("3 unparseable record(s)");
+    expect(finding.message).not.toContain("`publication` filter in atmo.toml that none");
+  });
+
+  it("accepts a source that renders pages, and one with no records at all", () => {
+    const stats = [
+      { source: "posts", rawDocuments: 5, unparseable: 1, pages: 4 },
+      { source: "books", rawDocuments: 0, unparseable: 0, pages: 0 },
+    ];
+    const findings = inspect(model({ pages: [{}] as never, sourceStats: stats }));
+    expect(findings.some((f) => f.code === "no-renderable-documents")).toBe(false);
+  });
+
+  it("suppresses the no-renderable-documents check under force", () => {
+    const stat = { source: "posts", rawDocuments: 12, unparseable: 0, pages: 0 };
+    const findings = inspect(model({ collections: [{}] as never, sourceStats: [stat] }), {
+      force: true,
+    });
+    expect(findings.some((f) => f.code === "no-renderable-documents")).toBe(false);
   });
 
   // The failure this whole module exists for.
@@ -203,6 +240,22 @@ describe("build guards", () => {
     await expect(
       readFile(join(config.out_dir, "posts", "p4", "index.html"), "utf8"),
     ).rejects.toThrow();
+  });
+
+  it("refuses when a pinned publication filters out every record", async () => {
+    const foreign = `at://${DID}/site.standard.publication/other`;
+    const config = await project(
+      [doc(1, { site: foreign }), doc(2, { site: foreign })],
+      1,
+      'publication = "self"',
+    );
+    try {
+      await build(config);
+      expect.unreachable("build should have refused");
+    } catch (e) {
+      expect(e).toBeInstanceOf(GuardError);
+      expect((e as GuardError).findings.map((f) => f.code)).toContain("no-renderable-documents");
+    }
   });
 
   it("refuses when a configured source was never pulled", async () => {

@@ -23,6 +23,10 @@ read and write — so your content is portable whether or not this tool exists.
 That leaves rendering as the only part worth owning:
 
 - **The repo is the only content store.** No local models, no sync, no drift.
+- **Leaflet documents render natively.** Block documents with inline
+  formatting (bold, links, highlights) and images come out as real HTML —
+  no `textContent` fallback required. Cover images render on the post page
+  and become its `og:image`.
 - **Authoring is someone else's job.** Write in a browser or on your phone with
   any standard.site app, or publish markdown with
   [Sequoia](https://sequoia.pub/). `atmo` never writes to your repo, so it
@@ -48,7 +52,8 @@ collections = ["buzz.bookhive.book"]
 
 A lexicon `atmo` has never seen still renders, through a generic template. To
 style one, add `templates/collections/<nsid>.eta` — the filename is the whole
-registration mechanism.
+registration mechanism. Collection pages are linked from the site header and
+listed in `sitemap.xml`.
 
 ## Customising
 

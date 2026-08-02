@@ -6,7 +6,13 @@ import { writeSourceCache, CACHE_VERSION } from "../src/cache.js";
 import { parseConfig, type Config } from "../src/config.js";
 import { build } from "../src/build.js";
 import { renderFeed, renderRobots, renderSitemap } from "../src/feed.js";
-import { excerpt, renderBody, renderMarkdown, renderPlainText } from "../src/markdown.js";
+import {
+  excerpt,
+  renderBody,
+  renderHtml,
+  renderMarkdown,
+  renderPlainText,
+} from "../src/markdown.js";
 import { loadSite } from "../src/site.js";
 import type { RawRecord } from "../src/repo.js";
 
@@ -25,7 +31,22 @@ const doc = (n: number, extra: Record<string, unknown> = {}): RawRecord => ({
   },
 });
 
-async function project(records: RawRecord[], extraToml = ""): Promise<Config> {
+/** One record of a non-document collection, for nav and sitemap cases. */
+const status = (): RawRecord => ({
+  uri: `at://${DID}/xyz.statusphere.status/3ks`,
+  cid: "bafys",
+  rkey: "3ks",
+  value: { status: "excited", createdAt: "2026-01-05T00:00:00Z" },
+});
+
+interface ProjectExtras {
+  toml?: string;
+  /** Cache collections beyond the documents. */
+  collections?: Record<string, RawRecord[]>;
+  blobs?: { cid: string; mimeType: string; bytes: number }[];
+}
+
+async function project(records: RawRecord[], extras: ProjectExtras = {}): Promise<Config> {
   const dir = await mkdtemp(join(tmpdir(), "atmo-build-"));
   const config = {
     ...parseConfig(`
@@ -37,7 +58,7 @@ description = "A test."
 [[source]]
 name = "posts"
 handle = "you.example.com"
-${extraToml}
+${extras.toml ?? ""}
 `),
     cache_dir: join(dir, "cache"),
     out_dir: join(dir, "out"),
@@ -48,8 +69,8 @@ ${extraToml}
     did: DID,
     pdsUrl: "https://pds.example.com",
     fetchedAt: "2026-07-01T00:00:00.000Z",
-    collections: { "site.standard.document": records },
-    blobs: [],
+    collections: { "site.standard.document": records, ...(extras.collections ?? {}) },
+    blobs: extras.blobs ?? [],
   });
   return config;
 }
@@ -83,9 +104,18 @@ describe("markdown", () => {
     expect(renderPlainText("<b>not bold</b>")).toContain("&lt;b&gt;");
   });
 
-  it("routes by isMarkdown", () => {
-    expect(renderBody("# H", true)).toContain("<h1>");
-    expect(renderBody("# H", false)).toContain("<p># H</p>");
+  it("routes by format", () => {
+    expect(renderBody("# H", "markdown")).toContain("<h1>");
+    expect(renderBody("# H", "text")).toContain("<p># H</p>");
+    expect(renderBody("<p>H</p>", "html")).toBe("<p>H</p>");
+  });
+
+  // Leaflet bodies arrive pre-rendered; the sanitizer still gets the last word.
+  it("sanitizes pre-rendered html", () => {
+    expect(renderHtml('<p>ok</p><script>alert(1)</script><img src=x onerror="x">')).not.toContain(
+      "script",
+    );
+    expect(renderHtml("<p>ok</p><u>u</u><mark>m</mark>")).toBe("<p>ok</p><u>u</u><mark>m</mark>");
   });
 
   it("builds an excerpt without markup", () => {
@@ -114,7 +144,7 @@ describe("site model", () => {
   });
 
   it("honours an explicit path_prefix", async () => {
-    const config = await project([doc(1)], 'path_prefix = "/writing"');
+    const config = await project([doc(1)], { toml: 'path_prefix = "/writing"' });
     const site = await loadSite(config);
     expect(site.pages[0]!.url).toBe("/writing/post-1/");
   });
@@ -207,6 +237,95 @@ describe("build", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("&lt;script&gt;");
   });
+
+  it("renders a cover image on the post page and as og:image", async () => {
+    const withCover = await project(
+      [doc(1, { coverImage: { ref: { $link: "bafyimg" }, mimeType: "image/png" } })],
+      { blobs: [{ cid: "bafyimg", mimeType: "image/png", bytes: 3 }] },
+    );
+    await build(withCover);
+    const html = await read(withCover, "posts/post-1/index.html");
+    expect(html).toContain('class="post-cover"');
+    expect(html).toContain('src="/assets/blobs/bafyimg.png"');
+    expect(html).toContain(
+      '<meta property="og:image" content="https://example.com/assets/blobs/bafyimg.png" />',
+    );
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+  });
+
+  it("emits neither cover figure nor og:image without a cover", async () => {
+    await build(config);
+    const html = await read(config, "posts/post-1/index.html");
+    expect(html).not.toContain("post-cover");
+    expect(html).not.toContain("og:image");
+  });
+
+  // The whole leaflet chain at once: parse -> sanitize -> blob URL rewrite.
+  it("builds a leaflet document with facets and a local image", async () => {
+    const content = {
+      $type: "pub.leaflet.content",
+      pages: [
+        {
+          $type: "pub.leaflet.pages.linearDocument",
+          blocks: [
+            {
+              block: {
+                $type: "pub.leaflet.blocks.text",
+                plaintext: "Hello bold world.",
+                facets: [
+                  {
+                    index: { byteStart: 6, byteEnd: 10 },
+                    features: [{ $type: "pub.leaflet.richtext.facet#bold" }],
+                  },
+                ],
+              },
+            },
+            {
+              block: {
+                $type: "pub.leaflet.blocks.image",
+                image: { ref: { $link: "bafyimg" }, mimeType: "image/png" },
+                alt: "pic",
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const { textContent: _omit, ...value } = doc(1).value as Record<string, unknown>;
+    const leaflet = await project([{ ...doc(1), value: { ...value, content } }], {
+      blobs: [{ cid: "bafyimg", mimeType: "image/png", bytes: 3 }],
+    });
+    await build(leaflet);
+
+    const html = await read(leaflet, "posts/post-1/index.html");
+    expect(html).toContain("Hello <strong>bold</strong> world.");
+    expect(html).toContain('src="/assets/blobs/bafyimg.png"');
+
+    // The feed sees the plaintext shadow, not the HTML.
+    const feed = await read(leaflet, "feed.xml");
+    expect(feed).toContain("<description>Hello bold world.</description>");
+  });
+
+  it("links collections from a site nav when there are any", async () => {
+    const withStatus = await project([doc(1)], {
+      collections: { "xyz.statusphere.status": [status()] },
+    });
+    await build(withStatus);
+    const index = await read(withStatus, "index.html");
+    expect(index).toContain('class="site-nav"');
+    expect(index).toContain('href="/posts/xyz.statusphere.status/"');
+    expect(index).toContain("Status");
+    // Every public page carries it, including the collection page itself.
+    expect(await read(withStatus, "posts/post-1/index.html")).toContain('class="site-nav"');
+    expect(await read(withStatus, "posts/xyz.statusphere.status/index.html")).toContain(
+      'class="site-nav"',
+    );
+  });
+
+  it("emits no nav for a posts-only site", async () => {
+    await build(config);
+    expect(await read(config, "index.html")).not.toContain("site-nav");
+  });
 });
 
 describe("feeds", () => {
@@ -241,12 +360,32 @@ describe("feeds", () => {
   });
 
   it("excludes encrypted sources from feed and sitemap", async () => {
-    const config = await project([doc(1)], 'visibility = "encrypted"');
+    const config = await project([doc(1)], { toml: 'visibility = "encrypted"' });
     const site = await loadSite(config);
 
     expect(site.pages).toHaveLength(1);
     expect(site.publicPages).toHaveLength(0);
     expect(renderFeed(site)).not.toContain("<item>");
     expect(renderSitemap(site)).not.toContain("/posts/post-1/");
+  });
+
+  it("lists collection pages in the sitemap", async () => {
+    const config = await project([doc(1)], {
+      collections: { "xyz.statusphere.status": [status()] },
+    });
+    const site = await loadSite(config);
+    expect(renderSitemap(site)).toContain(
+      "<loc>https://example.com/posts/xyz.statusphere.status/</loc>",
+    );
+  });
+
+  it("keeps an encrypted source's collections out of nav and sitemap", async () => {
+    const config = await project([doc(1)], {
+      toml: 'visibility = "encrypted"',
+      collections: { "xyz.statusphere.status": [status()] },
+    });
+    const site = await loadSite(config);
+    expect(site.collections).toHaveLength(0);
+    expect(renderSitemap(site)).not.toContain("statusphere");
   });
 });

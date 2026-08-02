@@ -9,6 +9,7 @@
  * build.
  */
 
+import { leafletContent } from "./leaflet.js";
 import type { RawRecord } from "./repo.js";
 
 /** A tag, with the slug the URL will use. */
@@ -16,6 +17,12 @@ export interface Tag {
   name: string;
   slug: string;
 }
+
+/**
+ * How a document's `content` should be rendered. `html` means it was already
+ * flattened (a Leaflet body) and only needs sanitizing.
+ */
+export type BodyFormat = "markdown" | "text" | "html";
 
 /** One document, shaped for templates. */
 export interface Document {
@@ -28,10 +35,13 @@ export interface Document {
   slug: string;
   title: string;
   summary: string;
-  /** Markdown when the record carries it, else plain text. */
+  /** The body in whatever form the record offered: markdown, HTML, or text. */
   content: string;
-  /** True when `content` is markdown rather than pre-flattened text. */
-  isMarkdown: boolean;
+  /** How `content` must be rendered. */
+  format: BodyFormat;
+  /** The body as plain text, for excerpts and feeds. Equals `content` unless
+   * the record carried a structured (Leaflet) body. */
+  text: string;
   tags: Tag[];
   publishedAt: Date;
   updatedAt: Date;
@@ -149,7 +159,10 @@ export function parseDocument(source: string, record: RawRecord): Document | nul
   const publishedAt = asDate(value["publishedAt"]);
   if (publishedAt === null) return null;
 
+  // Three probes, most faithful first: markdown-ish fields, then a Leaflet
+  // block document, then the pre-flattened `textContent` fallback.
   const markdown = contentMarkdown(value);
+  const leaflet = markdown === "" ? leafletContent(value["content"]) : null;
   const text = asString(value["textContent"]);
 
   const rawTags = Array.isArray(value["tags"]) ? value["tags"] : [];
@@ -172,8 +185,9 @@ export function parseDocument(source: string, record: RawRecord): Document | nul
     slug: slugFrom(value["path"], record.rkey),
     title: asString(value["title"]),
     summary: asString(value["description"]),
-    content: markdown !== "" ? markdown : text,
-    isMarkdown: markdown !== "",
+    content: markdown !== "" ? markdown : leaflet !== null ? leaflet.html : text,
+    format: markdown !== "" ? "markdown" : leaflet !== null ? "html" : "text",
+    text: markdown !== "" ? markdown : leaflet !== null ? leaflet.text : text,
     tags,
     publishedAt,
     updatedAt: asDate(value["updatedAt"]) ?? publishedAt,

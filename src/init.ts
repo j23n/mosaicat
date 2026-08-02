@@ -45,6 +45,9 @@ base_url = "${baseUrl}"
 name        = "posts"
 handle      = "${options.handle}"
 collections = ["site.standard.document"]
+# Only render documents claiming this publication rkey. Leave it unset to keep
+# everything — other apps (Leaflet among them) assign real rkeys.
+# publication = "self"
 
 # Other apps' records, rendered as their own pages. Uncomment what you use.
 # [[source]]

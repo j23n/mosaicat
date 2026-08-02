@@ -85,6 +85,16 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
     written.push(await emit(config.out_dir, path, contents));
   };
 
+  // Collection pages are reachable from nowhere unless the header links them,
+  // so a nav exists exactly when there are collections. A posts-only site gets
+  // none — a lone "Home" link pointing at itself is noise. The private half
+  // (`emitPrivate`) builds its own contexts and deliberately has no nav.
+  const navEntries = [
+    { label: "Home", url: "/" },
+    ...site.collections.map((c) => ({ label: collectionHeading(c.nsid), url: c.url })),
+  ].filter((entry, i, all) => all.findIndex((e) => e.url === entry.url) === i);
+  const nav = site.collections.length > 0 ? { nav: navEntries } : {};
+
   for (const paginated of site.index) {
     const body = renderer.render("list.eta", {
       pages: paginated.pages,
@@ -98,6 +108,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
         title: site.config.site.title,
         description: site.config.site.description,
         canonical: absolute(config.site.base_url, paginated.url),
+        ...nav,
         site: site.config.site,
         body,
       }),
@@ -119,6 +130,8 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
         title: `${page.doc.title || "Untitled"} — ${site.config.site.title}`,
         description: page.summary,
         canonical,
+        ...(page.coverUrl !== null ? { image: absolute(config.site.base_url, page.coverUrl) } : {}),
+        ...nav,
         site: site.config.site,
         body,
       }),
@@ -137,6 +150,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
       renderer.page({
         title: `#${tag.tag.name} — ${site.config.site.title}`,
         canonical: absolute(config.site.base_url, tag.url),
+        ...nav,
         site: site.config.site,
         body,
       }),
@@ -157,6 +171,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
       renderer.page({
         title: `${heading} — ${site.config.site.title}`,
         canonical: absolute(config.site.base_url, collection.url),
+        ...nav,
         site: site.config.site,
         body,
       }),

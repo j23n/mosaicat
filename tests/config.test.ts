@@ -15,11 +15,20 @@ describe("parseConfig", () => {
     const first = config.source[0]!;
 
     expect(first.collections).toEqual(["site.standard.document"]);
-    expect(first.publication).toBe("self");
+    // No publication pin by default: other apps' documents claim real rkeys,
+    // and a default filter would hide them all.
+    expect(first.publication).toBe("");
     expect(first.visibility).toBe("public");
     expect(first.max_records).toBe(1000);
     expect(config.cache_dir).toBe(".atmo/cache");
     expect(config.out_dir).toBe("dist");
+  });
+
+  it("keeps an explicit publication pin", () => {
+    const config = parseConfig(
+      source(`name = "posts"\nhandle = "a.example.com"\npublication = "self"`),
+    );
+    expect(config.source[0]!.publication).toBe("self");
   });
 
   it("strips a trailing slash from base_url so joins never double up", () => {

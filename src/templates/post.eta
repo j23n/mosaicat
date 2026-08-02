@@ -23,6 +23,12 @@
     <% } %>
   </header>
 
+  <% if (it.page.coverUrl) { %>
+  <figure class="post-cover">
+    <img src="<%= it.page.coverUrl %>" alt="" />
+  </figure>
+  <% } %>
+
   <div class="post-body e-content"><%~ it.page.html %></div>
 
   <% if (it.reactions && it.reactions.mode === "client") { %>

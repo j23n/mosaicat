@@ -13,7 +13,10 @@ description = "Written somewhere in the ATmosphere."
 name        = "posts"
 handle      = "you.example.com"
 collections = ["site.standard.document"]
-publication = "self"
+# Only render documents claiming this publication rkey. Leave it unset to keep
+# everything: other apps (Leaflet among them) assign real rkeys, and pinning
+# "self" would hide their posts.
+# publication = "self"
 
 # Other apps' records, rendered as their own pages. You never wrote these —
 # Tangled and BookHive did, into your repo. Same identity, same fetch path.
@@ -33,7 +36,6 @@ publication = "self"
 # did         = "did:plc:xxxxxxxxxxxxxxxxxxxxxxxx"
 # pds_url     = "http://pds-private:3000"
 # collections = ["site.standard.document"]
-# publication = "self"
 # visibility  = "encrypted"
 
 # cache_dir = ".atmo/cache"

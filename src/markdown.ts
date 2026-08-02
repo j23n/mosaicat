@@ -10,6 +10,7 @@
 
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
+import type { BodyFormat } from "./document.js";
 
 /**
  * Tags a document body may use. Everything else is stripped, keeping the text
@@ -28,6 +29,8 @@ const ALLOWED_TAGS = [
   "strong",
   "em",
   "del",
+  "u",
+  "mark",
   "code",
   "pre",
   "blockquote",
@@ -98,9 +101,27 @@ export function renderPlainText(source: string): string {
     .join("\n");
 }
 
-/** Render a document's body according to whether it carried markdown. */
-export function renderBody(content: string, isMarkdown: boolean): string {
-  return isMarkdown ? renderMarkdown(content) : renderPlainText(content);
+/**
+ * Sanitize HTML that was already rendered — a Leaflet body. The leaflet
+ * renderer only emits allow-listed tags, but it runs over hostile input, so
+ * its output goes through the same gate as everything else. Defense in depth:
+ * a bug there must not become an injection here.
+ */
+export function renderHtml(source: string): string {
+  if (source.trim() === "") return "";
+  return sanitizeHtml(source, SANITIZE_OPTIONS);
+}
+
+/** Render a document's body according to its declared format. */
+export function renderBody(content: string, format: BodyFormat): string {
+  switch (format) {
+    case "markdown":
+      return renderMarkdown(content);
+    case "html":
+      return renderHtml(content);
+    case "text":
+      return renderPlainText(content);
+  }
 }
 
 /** First `limit` characters of the body as plain text, for summaries/feeds. */

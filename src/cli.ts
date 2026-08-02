@@ -170,6 +170,13 @@ async function doctor(config: Awaited<ReturnType<typeof loadConfig>>): Promise<n
     `\ncache:  ${site.pages.length} page(s), ${site.collections.length} collection(s), ` +
       `${site.blobs.length} blob(s)\n`,
   );
+  // Per-source accounting: a full cache that renders to nothing shows up here
+  // as `N record(s) -> 0 page(s)` before the guard spells out why.
+  for (const stat of site.sourceStats) {
+    process.stdout.write(
+      `  "${stat.source}" documents: ${stat.rawDocuments} record(s) -> ${stat.pages} page(s)\n`,
+    );
+  }
   if (previous !== null) {
     process.stdout.write(`last build: ${previous.pages} page(s) at ${previous.builtAt}\n`);
   }
