@@ -195,7 +195,8 @@ describe("build", () => {
       collections: { "site.standard.document": [doc(1, { tags: ["notes"] })] },
       blobs: [],
     });
-    await build(fewer);
+    // Deliberate shrink, so it needs --force once branch `h` guards land.
+    await build(fewer, { force: true });
     await expect(read(fewer, "posts/post-2/index.html")).rejects.toThrow();
   });
 

@@ -11,7 +11,7 @@ import { rewriteBlobUrls, type BlobRecord } from "./blob.js";
 import { collectItems, type CollectionPage } from "./collection.js";
 import { readSourceCache } from "./cache.js";
 import { DOCUMENT_NSID } from "./config.js";
-import { collectDocuments, type Document, type Tag } from "./document.js";
+import { collectDocuments, parseDocument, type Document, type Tag } from "./document.js";
 import { excerpt, renderBody } from "./markdown.js";
 
 /** A document plus everything the templates need that isn't in the record. */
@@ -55,6 +55,8 @@ export interface SiteModel {
   collections: CollectionPage[];
   /** Sources that produced no cache entry at all. */
   missingSources: string[];
+  /** Records that could not be rendered — the cost of tolerant parsing. */
+  skipped: number;
 }
 
 export class BuildError extends Error {}
@@ -112,6 +114,7 @@ export async function loadSite(config: Config): Promise<SiteModel> {
   const blobs: BlobRecord[] = [];
   const mimeByCid = new Map<string, string>();
   const collections: CollectionPage[] = [];
+  let skipped = 0;
 
   for (const source of config.source) {
     const cache = await readSourceCache(config.cache_dir, source.name);
@@ -141,6 +144,9 @@ export async function loadSite(config: Config): Promise<SiteModel> {
 
     const records = cache.collections[DOCUMENT_NSID] ?? [];
     const documents = collectDocuments(source.name, cache.did, source.publication, records);
+    // Every record that parsed to nothing. Branch `c` drops these silently by
+    // design; `doctor` is where that silence is broken.
+    skipped += records.filter((r) => parseDocument(source.name, r) === null).length;
 
     for (const doc of documents) {
       const html = rewriteBlobUrls(renderBody(doc.content, doc.isMarkdown), mimeByCid);
@@ -181,5 +187,6 @@ export async function loadSite(config: Config): Promise<SiteModel> {
     blobs,
     collections,
     missingSources,
+    skipped,
   };
 }

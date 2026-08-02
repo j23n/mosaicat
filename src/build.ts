@@ -13,6 +13,15 @@ import { dirname, join } from "node:path";
 import type { Config } from "./config.js";
 import { collectionHeading, templateCandidates } from "./collection.js";
 import { renderFeed, renderRobots, renderSitemap } from "./feed.js";
+import {
+  GuardError,
+  hasErrors,
+  inspect,
+  manifestFor,
+  readManifest,
+  writeManifest,
+  type GuardFinding,
+} from "./guard.js";
 import { createRenderer, type Renderer } from "./render.js";
 import { BUILTIN_TEMPLATES } from "./render.js";
 import { absolute, loadSite, type Page, type SiteModel } from "./site.js";
@@ -22,12 +31,16 @@ export interface BuildOptions {
   /** Injected so tests are deterministic. */
   renderer?: Renderer;
   log?: (line: string) => void;
+  /** Publish even when a guard would refuse. */
+  force?: boolean;
+  now?: () => Date;
 }
 
 export interface BuildResult {
   site: SiteModel;
   /** Site-absolute paths written, in order. */
   written: string[];
+  findings: GuardFinding[];
 }
 
 /** Write a file, creating parents. `path` is site-absolute (`/a/b/`). */
@@ -47,6 +60,13 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   const { projectRoot = ".", log = () => {} } = options;
   const renderer = options.renderer ?? createRenderer(projectRoot);
   const site = await loadSite(config);
+
+  // Inspect BEFORE writing anything: a refused build must leave the previous
+  // output untouched, so whatever is deployed stays deployed.
+  const previous = await readManifest(config.cache_dir);
+  const findings = inspect(site, { force: options.force ?? false, previous });
+  if (hasErrors(findings)) throw new GuardError(findings);
+
   const written: string[] = [];
 
   // A fresh directory each time: a stale file from a deleted post would
@@ -169,8 +189,11 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
     }
   }
 
+  const now = (options.now ?? (() => new Date()))();
+  await writeManifest(config.cache_dir, manifestFor(site, now));
+
   log(`${written.length} file(s) -> ${config.out_dir}`);
-  return { site, written };
+  return { site, written, findings };
 }
 
 export { BUILTIN_TEMPLATES };
