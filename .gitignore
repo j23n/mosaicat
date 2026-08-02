@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.atmo/
+atmo.toml
+*.log
+.DS_Store

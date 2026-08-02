@@ -1,0 +1,40 @@
+# atmo configuration — the tool's entire public surface.
+#
+# Copy to atmo.toml and edit. Everything else is templates.
+
+[site]
+title       = "Your Site"
+base_url    = "https://example.com"
+description = "Written somewhere in the ATmosphere."
+
+# Your public repo. A handle is resolved over the network:
+#   handle -> DID -> PDS service endpoint
+[[source]]
+name        = "posts"
+handle      = "you.example.com"
+collections = ["site.standard.document"]
+publication = "self"
+
+# Other apps' records, rendered as their own pages. You never wrote these —
+# Tangled and BookHive did, into your repo. Same identity, same fetch path.
+# [[source]]
+# name        = "books"
+# handle      = "you.example.com"
+# collections = ["buzz.bookhive.book"]
+
+# A private repo on a PDS that is not reachable from the internet. It has no
+# public handle to resolve, so DID and PDS URL are given verbatim — both, or
+# neither. Output is encrypted and served at unguessable, derived paths.
+#
+# Note: a build including this source must run somewhere that can reach
+# `pds_url`, which usually means locally rather than in CI.
+# [[source]]
+# name        = "private"
+# did         = "did:plc:xxxxxxxxxxxxxxxxxxxxxxxx"
+# pds_url     = "http://pds-private:3000"
+# collections = ["site.standard.document"]
+# publication = "self"
+# visibility  = "encrypted"
+
+# cache_dir = ".atmo/cache"
+# out_dir   = "dist"
