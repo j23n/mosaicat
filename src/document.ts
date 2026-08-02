@@ -39,6 +39,8 @@ export interface Document {
   site: string;
   /** Blob ref for the cover image, if the record has a usable one. */
   cover: BlobRef | null;
+  /** AT-URI of a companion app.bsky.feed.post, when the record names one. */
+  bskyPostUri: string;
 }
 
 /** A blob reference as it appears inside a record. */
@@ -59,6 +61,24 @@ export function slugify(value: string): string {
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+/**
+ * The companion Bluesky post a document may point at.
+ *
+ * Writers disagree on the field name and on whether it is a string or a
+ * strongRef, so probe rather than assume.
+ */
+export function bskyRef(value: Record<string, unknown>): string {
+  for (const key of ["bskyPostRef", "bskyPost", "discussion"]) {
+    const candidate = value[key];
+    if (typeof candidate === "string" && candidate.startsWith("at://")) return candidate;
+    if (typeof candidate === "object" && candidate !== null) {
+      const uri = (candidate as Record<string, unknown>)["uri"];
+      if (typeof uri === "string" && uri.startsWith("at://")) return uri;
+    }
+  }
+  return "";
 }
 
 /** Parse a date, returning null for anything unusable. */
@@ -159,6 +179,7 @@ export function parseDocument(source: string, record: RawRecord): Document | nul
     updatedAt: asDate(value["updatedAt"]) ?? publishedAt,
     site: asString(value["site"]),
     cover: asBlobRef(value["coverImage"]),
+    bskyPostUri: bskyRef(value),
   };
 }
 

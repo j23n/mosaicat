@@ -78,13 +78,20 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   }
 
   for (const page of site.publicPages) {
-    const body = renderer.render("post.eta", { page, atUri: atUri(page) });
+    const canonical = absolute(config.site.base_url, page.url);
+    const body = renderer.render("post.eta", {
+      page,
+      atUri: atUri(page),
+      canonical,
+      bskyUri: page.doc.bskyPostUri,
+      reactions: config.reactions,
+    });
     await emitPage(
       page.url,
       renderer.page({
         title: `${page.doc.title || "Untitled"} — ${site.config.site.title}`,
         description: page.summary,
-        canonical: absolute(config.site.base_url, page.url),
+        canonical,
         site: site.config.site,
         body,
       }),
@@ -139,6 +146,14 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   await mkdir(dirname(cssTarget), { recursive: true });
   await cp(cssSource, cssTarget);
   written.push("/assets/atmo.css");
+
+  if (config.reactions.mode === "client") {
+    const source = renderer.resolveTemplate("reactions.js");
+    const target = join(config.out_dir, "assets", "reactions.js");
+    await mkdir(dirname(target), { recursive: true });
+    await cp(source, target);
+    written.push("/assets/reactions.js");
+  }
 
   // Blobs: copy from the cache rather than refetching. `build` has no network.
   for (const blob of site.blobs) {

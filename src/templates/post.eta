@@ -25,6 +25,20 @@
 
   <div class="post-body e-content"><%~ it.page.html %></div>
 
+  <% if (it.reactions && it.reactions.mode === "client") { %>
+  <section
+    class="reactions"
+    hidden
+    data-atmo-reactions
+    data-at-uri="<%= it.page.doc.uri %>"
+    data-page-url="<%= it.canonical %>"
+    data-bsky-uri="<%= it.bskyUri %>"
+    data-appview="<%= it.reactions.appview %>"
+    data-constellation="<%= it.reactions.constellation %>"
+  ></section>
+  <script src="/assets/reactions.js" defer></script>
+  <% } %>
+
   <footer class="post-footer">
     <p class="post-source">
       <a class="u-url" href="<%= it.atUri %>">This post as a record</a>
