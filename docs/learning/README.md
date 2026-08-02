@@ -17,10 +17,10 @@ You already write code well. The goal is twofold:
 ## How to take the course
 
 Each branch is stacked on the previous one. Review them **bottom-up, in order**
-(a → j).
+(a → k).
 
 - `main` — an empty repository. Nothing but a README and a licence.
-- `learn/a-skeleton` … `learn/j-ship-it` — the ten lessons.
+- `learn/a-skeleton` … `learn/k-field-report` — the eleven lessons.
 
 For each:
 
@@ -61,6 +61,7 @@ the same lexicon, so the only part worth owning is the rendering.
 | h   | [builds-you-can-trust](h-builds-you-can-trust.md)   | cache, guards, `atmo doctor` | PDS availability, honestly                                | build-failure taxonomy; why a static build is _less_ forgiving      |
 | i   | [private-by-capability](i-private-by-capability.md) | encrypted private posts      | a source with no public identity                          | using vetted crypto; capability URLs; stating a threat model        |
 | j   | [ship-it](j-ship-it.md)                             | packaging, action, docs      | —                                                         | distribution, docs as product surface                               |
+| k   | [field-report](k-field-report.md)                   | Leaflet bodies, covers, nav  | `pub.leaflet.content`, byte-offset facets                 | field testing; the silent failure modes of tolerant defaults        |
 
 ## A 10-minute ATProto primer (read once, before `b`)
 

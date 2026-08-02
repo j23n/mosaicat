@@ -7,7 +7,7 @@
  */
 
 import type { Config, Source } from "./config.js";
-import { rewriteBlobUrls, type BlobRecord } from "./blob.js";
+import { blobUrl, rewriteBlobUrls, type BlobRecord } from "./blob.js";
 import { collectItems, type CollectionPage } from "./collection.js";
 import { readSourceCache } from "./cache.js";
 import { DOCUMENT_NSID } from "./config.js";
@@ -23,6 +23,8 @@ export interface Page {
   html: string;
   /** Plain-text summary: the record's own, or derived from the body. */
   summary: string;
+  /** Local URL of the cover image, when the record has a usable one. */
+  coverUrl: string | null;
 }
 
 export interface TagPage {
@@ -41,6 +43,17 @@ export interface Paginated {
   totalPages: number;
 }
 
+/** Per-source parse accounting, for the guard and `doctor`. */
+export interface SourceStat {
+  source: string;
+  /** Document records present in the cache. */
+  rawDocuments: number;
+  /** Records that could not be parsed at all. */
+  unparseable: number;
+  /** Documents that survived parsing and the publication filter. */
+  pages: number;
+}
+
 export interface SiteModel {
   config: Config;
   /** Every renderable page, newest first, across all document sources. */
@@ -57,6 +70,8 @@ export interface SiteModel {
   missingSources: string[];
   /** Records that could not be rendered — the cost of tolerant parsing. */
   skipped: number;
+  /** How each source's document records fared, in config order. */
+  sourceStats: SourceStat[];
 }
 
 export class BuildError extends Error {}
@@ -114,6 +129,7 @@ export async function loadSite(config: Config): Promise<SiteModel> {
   const blobs: BlobRecord[] = [];
   const mimeByCid = new Map<string, string>();
   const collections: CollectionPage[] = [];
+  const sourceStats: SourceStat[] = [];
   let skipped = 0;
 
   for (const source of config.source) {
@@ -146,15 +162,28 @@ export async function loadSite(config: Config): Promise<SiteModel> {
     const documents = collectDocuments(source.name, cache.did, source.publication, records);
     // Every record that parsed to nothing. Branch `c` drops these silently by
     // design; `doctor` is where that silence is broken.
-    skipped += records.filter((r) => parseDocument(source.name, r) === null).length;
+    const unparseable = records.filter((r) => parseDocument(source.name, r) === null).length;
+    skipped += unparseable;
+    sourceStats.push({
+      source: source.name,
+      rawDocuments: records.length,
+      unparseable,
+      pages: documents.length,
+    });
 
     for (const doc of documents) {
-      const html = rewriteBlobUrls(renderBody(doc.content, doc.isMarkdown), mimeByCid);
+      const html = rewriteBlobUrls(renderBody(doc.content, doc.format), mimeByCid);
       pages.push({
         doc,
         url: pageUrl(source, doc),
         html,
-        summary: doc.summary !== "" ? doc.summary : excerpt(doc.content),
+        summary: doc.summary !== "" ? doc.summary : excerpt(doc.text),
+        // Prefer the fetched mime type: it decides the emitted file's
+        // extension, and the record's claim may disagree with the bytes.
+        coverUrl:
+          doc.cover !== null
+            ? blobUrl(doc.cover.cid, mimeByCid.get(doc.cover.cid) ?? doc.cover.mimeType)
+            : null,
       });
     }
   }
@@ -188,5 +217,6 @@ export async function loadSite(config: Config): Promise<SiteModel> {
     collections,
     missingSources,
     skipped,
+    sourceStats,
   };
 }

@@ -96,6 +96,29 @@ export function inspect(site: SiteModel, options: GuardOptions = {}): GuardFindi
       });
     }
 
+    // A source whose records all parsed to nothing is the empty-site failure
+    // in a subtler coat: the cache is full, the site is not, and a collection
+    // page elsewhere can keep the empty-site check quiet. The usual culprit is
+    // a `publication` filter that matches none of the records.
+    for (const stat of site.sourceStats) {
+      if (stat.rawDocuments === 0 || stat.pages > 0) continue;
+      const causes: string[] = [];
+      if (stat.rawDocuments - stat.unparseable > 0) {
+        causes.push("a `publication` filter in atmo.toml that none of them claim");
+      }
+      if (stat.unparseable > 0) {
+        causes.push(`${stat.unparseable} unparseable record(s)`);
+      }
+      findings.push({
+        severity: "error",
+        code: "no-renderable-documents",
+        message:
+          `source "${stat.source}" has ${stat.rawDocuments} document record(s) but ` +
+          `0 renderable pages — likely ${causes.join(" and ")}; ` +
+          "check `publication` in atmo.toml, or pass --force",
+      });
+    }
+
     if (previous !== null && previous.pages > 0) {
       const lost = previous.pages - site.pages.length;
       if (lost > 0 && lost / previous.pages >= SHRINK_THRESHOLD) {

@@ -11,6 +11,9 @@
     <% } %> <% if (it.noindex) { %>
     <meta name="robots" content="noindex, nofollow" />
     <meta name="referrer" content="no-referrer" />
+    <% } %> <% if (it.image) { %>
+    <meta property="og:image" content="<%= it.image %>" />
+    <meta name="twitter:card" content="summary_large_image" />
     <% } %>
     <link rel="alternate" type="application/rss+xml" title="<%= it.site.title %>" href="/feed.xml" />
     <link rel="stylesheet" href="/assets/atmo.css" />
@@ -20,6 +23,12 @@
       <a class="site-title" href="/"><%= it.site.title %></a>
       <% if (it.site.description) { %>
       <p class="site-description"><%= it.site.description %></p>
+      <% } %> <% if (it.nav) { %>
+      <nav class="site-nav">
+        <% it.nav.forEach(function (entry) { %>
+        <a href="<%= entry.url %>"><%= entry.label %></a>
+        <% }) %>
+      </nav>
       <% } %>
     </header>
 

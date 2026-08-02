@@ -34,6 +34,10 @@ export interface PageContext {
   description?: string;
   canonical?: string;
   noindex?: boolean;
+  /** Absolute URL of a preview image, for og:image. */
+  image?: string;
+  /** Site navigation links. Absent when the site has nothing beyond posts. */
+  nav?: { label: string; url: string }[];
   site: { title: string; description: string };
   body: string;
 }

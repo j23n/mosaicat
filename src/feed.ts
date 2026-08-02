@@ -53,6 +53,8 @@ export function renderSitemap(site: SiteModel): string {
     ...site.index.map((p) => ({ loc: p.url, lastmod: site.publicPages[0]?.doc.updatedAt })),
     ...site.publicPages.map((p) => ({ loc: p.url, lastmod: p.doc.updatedAt })),
     ...site.tags.map((t) => ({ loc: t.url, lastmod: t.pages[0]?.doc.updatedAt })),
+    // Encrypted sources never reach `site.collections`, so this stays public.
+    ...site.collections.map((c) => ({ loc: c.url, lastmod: c.items[0]?.at ?? undefined })),
   ];
 
   const entries = urls.map(({ loc, lastmod }) =>

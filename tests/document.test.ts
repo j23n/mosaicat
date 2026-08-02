@@ -100,13 +100,15 @@ describe("content", () => {
   it("prefers markdown over flattened text", () => {
     const doc = parseDocument("posts", record(valid({ content: { markdown: "# Real" } })))!;
     expect(doc.content).toBe("# Real");
-    expect(doc.isMarkdown).toBe(true);
+    expect(doc.format).toBe("markdown");
+    expect(doc.text).toBe("# Real");
   });
 
   it("falls back to textContent when the block is absent", () => {
     const doc = parseDocument("posts", record(valid()))!;
     expect(doc.content).toBe("Body.");
-    expect(doc.isMarkdown).toBe(false);
+    expect(doc.format).toBe("text");
+    expect(doc.text).toBe("Body.");
   });
 
   // `content` is an open union: an unknown shape must not lose the post.
@@ -116,6 +118,33 @@ describe("content", () => {
       record(valid({ content: { $type: "some.future.block", blocks: [1, 2] } })),
     )!;
     expect(doc.content).toBe("Body.");
+    expect(doc.format).toBe("text");
+  });
+
+  it("flattens a leaflet body to html with a plaintext shadow", () => {
+    const content = {
+      $type: "pub.leaflet.content",
+      pages: [
+        {
+          $type: "pub.leaflet.pages.linearDocument",
+          blocks: [{ block: { $type: "pub.leaflet.blocks.text", plaintext: "From leaflet." } }],
+        },
+      ],
+    };
+    const doc = parseDocument("posts", record(valid({ content })))!;
+    expect(doc.format).toBe("html");
+    expect(doc.content).toBe("<p>From leaflet.</p>");
+    expect(doc.text).toBe("From leaflet.");
+  });
+
+  it("falls back to textContent when a leaflet body renders to nothing", () => {
+    const content = {
+      $type: "pub.leaflet.content",
+      pages: [{ blocks: [{ block: { $type: "pub.leaflet.blocks.poll" } }] }],
+    };
+    const doc = parseDocument("posts", record(valid({ content })))!;
+    expect(doc.content).toBe("Body.");
+    expect(doc.format).toBe("text");
   });
 
   it.each([

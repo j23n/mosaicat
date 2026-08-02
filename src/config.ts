@@ -51,8 +51,13 @@ const SourceSchema = z
      * Publication rkey this source's documents must belong to. Records that
      * positively claim a *different* publication in the same repo are skipped,
      * which is how drafts and posts share one repo.
+     *
+     * `""` (the default) pins nothing and keeps every document. Pinning is
+     * opt-in because other writers assign real rkeys — a repo written by
+     * Leaflet has no publication named "self", and a default that filtered on
+     * one would silently hide every post.
      */
-    publication: z.string().default("self"),
+    publication: z.string().default(""),
 
     /** `public` emits normally; `encrypted` routes through the private path. */
     visibility: z.enum(["public", "encrypted"]).default("public"),
