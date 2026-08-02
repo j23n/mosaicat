@@ -4,6 +4,9 @@
 
 import type { Config } from "./config.js";
 import { writeSourceCache, CACHE_VERSION, type SourceCache } from "./cache.js";
+import { cachedBlobs, documentCids, fetchBlob, type BlobRecord } from "./blob.js";
+import { DOCUMENT_NSID } from "./config.js";
+import { collectDocuments } from "./document.js";
 import { resolveSource, type ResolveOptions } from "./identity.js";
 import { listRecords } from "./repo.js";
 
@@ -17,6 +20,7 @@ export interface PullResult {
   source: string;
   did: string;
   records: number;
+  blobs: number;
   path: string;
 }
 
@@ -49,6 +53,27 @@ export async function pull(config: Config, options: PullOptions = {}): Promise<P
       log(`  ${collection}: ${records.length} record(s)`);
     }
 
+    // Blobs are content-addressed, so an already-cached CID is never refetched.
+    const documents = collectDocuments(
+      source.name,
+      identity.did,
+      source.publication,
+      collections[DOCUMENT_NSID] ?? [],
+    );
+    const existing = await cachedBlobs(config.cache_dir);
+    const blobs: BlobRecord[] = [];
+    const wanted = new Set(documents.flatMap(documentCids));
+
+    for (const cid of wanted) {
+      const blob = await fetchBlob(config.cache_dir, identity, cid, existing, {
+        ...(options.fetcher ? { fetcher: options.fetcher } : {}),
+        ...(options.dnsLookup ? { dnsLookup: options.dnsLookup } : {}),
+      });
+      // A blob that will not download is a broken image, not a failed build.
+      if (blob !== null) blobs.push(blob);
+    }
+    if (wanted.size > 0) log(`  blobs: ${blobs.length}/${wanted.size}`);
+
     const cache: SourceCache = {
       version: CACHE_VERSION,
       source: source.name,
@@ -56,10 +81,17 @@ export async function pull(config: Config, options: PullOptions = {}): Promise<P
       pdsUrl: identity.pdsUrl,
       fetchedAt: now().toISOString(),
       collections: collections as SourceCache["collections"],
+      blobs,
     };
 
     const path = await writeSourceCache(config.cache_dir, cache);
-    results.push({ source: source.name, did: identity.did, records: total, path });
+    results.push({
+      source: source.name,
+      did: identity.did,
+      records: total,
+      blobs: blobs.length,
+      path,
+    });
   }
 
   return results;

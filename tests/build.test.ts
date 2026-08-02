@@ -49,6 +49,7 @@ ${extraToml}
     pdsUrl: "https://pds.example.com",
     fetchedAt: "2026-07-01T00:00:00.000Z",
     collections: { "site.standard.document": records },
+    blobs: [],
   });
   return config;
 }
@@ -192,6 +193,7 @@ describe("build", () => {
       pdsUrl: "https://pds.example.com",
       fetchedAt: "2026-07-02T00:00:00.000Z",
       collections: { "site.standard.document": [doc(1, { tags: ["notes"] })] },
+      blobs: [],
     });
     await build(fewer);
     await expect(read(fewer, "posts/post-2/index.html")).rejects.toThrow();

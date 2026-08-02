@@ -7,6 +7,7 @@
  */
 
 import type { Config, Source } from "./config.js";
+import { rewriteBlobUrls, type BlobRecord } from "./blob.js";
 import { readSourceCache } from "./cache.js";
 import { DOCUMENT_NSID } from "./config.js";
 import { collectDocuments, type Document, type Tag } from "./document.js";
@@ -47,6 +48,8 @@ export interface SiteModel {
   publicPages: Page[];
   tags: TagPage[];
   index: Paginated[];
+  /** Every blob available in the cache, keyed by CID. */
+  blobs: BlobRecord[];
   /** Sources that produced no cache entry at all. */
   missingSources: string[];
 }
@@ -103,6 +106,8 @@ function paginate(pages: Page[], perPage: number): Paginated[] {
 export async function loadSite(config: Config): Promise<SiteModel> {
   const pages: Page[] = [];
   const missingSources: string[] = [];
+  const blobs: BlobRecord[] = [];
+  const mimeByCid = new Map<string, string>();
 
   for (const source of config.source) {
     const cache = await readSourceCache(config.cache_dir, source.name);
@@ -111,11 +116,18 @@ export async function loadSite(config: Config): Promise<SiteModel> {
       continue;
     }
 
+    for (const blob of cache.blobs ?? []) {
+      if (!mimeByCid.has(blob.cid)) {
+        mimeByCid.set(blob.cid, blob.mimeType);
+        blobs.push(blob);
+      }
+    }
+
     const records = cache.collections[DOCUMENT_NSID] ?? [];
     const documents = collectDocuments(source.name, cache.did, source.publication, records);
 
     for (const doc of documents) {
-      const html = renderBody(doc.content, doc.isMarkdown);
+      const html = rewriteBlobUrls(renderBody(doc.content, doc.isMarkdown), mimeByCid);
       pages.push({
         doc,
         url: pageUrl(source, doc),
@@ -150,6 +162,7 @@ export async function loadSite(config: Config): Promise<SiteModel> {
     publicPages,
     tags,
     index: paginate(publicPages, config.page_size),
+    blobs,
     missingSources,
   };
 }

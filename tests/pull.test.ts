@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readSourceCache, type SourceCache } from "../src/cache.js";
+import { CACHE_VERSION, readSourceCache, type SourceCache } from "../src/cache.js";
 import { parseConfig } from "../src/config.js";
 import { IdentityError, pdsFromDidDocument, resolveSource } from "../src/identity.js";
 import { listRecords } from "../src/repo.js";
@@ -138,7 +138,7 @@ describe("pull", () => {
 
     const results = await pull(config, { ...net, now: () => new Date("2026-07-01T00:00:00Z") });
 
-    expect(results[0]).toMatchObject({ source: "posts", did: DID, records: 3 });
+    expect(results[0]).toMatchObject({ source: "posts", did: DID, records: 3, blobs: 0 });
 
     const cache = await readSourceCache(dir, "posts");
     expect(cache?.did).toBe(DID);
@@ -146,7 +146,7 @@ describe("pull", () => {
     expect(cache?.collections["site.standard.document"]).toHaveLength(3);
 
     const onDisk = JSON.parse(await readFile(join(dir, "posts.json"), "utf8")) as SourceCache;
-    expect(onDisk.version).toBe(1);
+    expect(onDisk.version).toBe(CACHE_VERSION);
   });
 
   it("treats a cache from a different version as absent", async () => {
