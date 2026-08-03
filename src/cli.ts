@@ -11,6 +11,7 @@
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { ConfigError, loadConfig } from "./config.js";
+import { FrontmatterError } from "./frontmatter.js";
 import { HttpError } from "./http.js";
 import { IdentityError } from "./identity.js";
 import { build } from "./build.js";
@@ -18,7 +19,9 @@ import { GuardError, inspect, readManifest } from "./guard.js";
 import { init, InitError } from "./init.js";
 import { PrivateError } from "./private.js";
 import { loadSite } from "./site.js";
+import { publish, unpublish } from "./publish.js";
 import { pull } from "./pull.js";
+import { AuthError } from "./write.js";
 
 const USAGE = `atmo — a static site generator for an ATProto repo
 
@@ -27,21 +30,26 @@ usage:
   atmo pull    [--config <path>]   fetch records and blobs into the cache
   atmo build   [--config <path>]   render the cache into the output directory
   atmo doctor  [--config <path>]   check config, cache and model health
+  atmo publish   <file.md> [...]   publish markdown files as document records
+  atmo unpublish <file.md> [...]   delete records previously published by atmo
 
 options:
   -c, --config <path>   config file (default: atmo.toml)
   -f, --force           build even when a guard would refuse; overwrite on init
       --title <text>    site title (init)
       --base-url <url>  public origin (init)
+      --source <name>   which [[source]] to write to (publish/unpublish;
+                        required when the config has more than one)
+      --dry-run         print the plan without signing in or writing anything
   -h, --help            show this help
   -V, --version         show version
 `;
 
 const VERSION = "0.0.0";
 
-type Command = "init" | "pull" | "build" | "doctor";
+type Command = "init" | "pull" | "build" | "doctor" | "publish" | "unpublish";
 
-const COMMANDS = new Set<Command>(["init", "pull", "build", "doctor"]);
+const COMMANDS = new Set<Command>(["init", "pull", "build", "doctor", "publish", "unpublish"]);
 
 function isCommand(value: string): value is Command {
   return COMMANDS.has(value as Command);
@@ -55,6 +63,8 @@ export async function main(argv: string[]): Promise<number> {
       force: { type: "boolean", short: "f", default: false },
       title: { type: "string" },
       "base-url": { type: "string" },
+      source: { type: "string" },
+      "dry-run": { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
       version: { type: "boolean", short: "V", default: false },
     },
@@ -121,9 +131,30 @@ export async function main(argv: string[]): Promise<number> {
         }
         return 0;
       }
+      case "publish":
+      case "unpublish": {
+        const files = positionals.slice(1);
+        if (files.length === 0) {
+          process.stderr.write(`atmo: ${command} needs at least one <file.md>\n\n${USAGE}`);
+          return 1;
+        }
+        const verb = command === "publish" ? publish : unpublish;
+        const results = await verb(config, files, {
+          log: (l) => process.stdout.write(`${l}\n`),
+          dryRun: values["dry-run"],
+          ...(values.source !== undefined ? { sourceName: values.source } : {}),
+        });
+        const written = results.filter((r) => !r.action.startsWith("would")).length;
+        process.stdout.write(
+          values["dry-run"]
+            ? `\ndry run: ${results.length} file(s) planned, nothing written\n`
+            : `\n${command}ed ${written} file(s)\n`,
+        );
+        return 0;
+      }
     }
   } catch (e) {
-    if (e instanceof ConfigError) {
+    if (e instanceof ConfigError || e instanceof FrontmatterError) {
       process.stderr.write(`atmo: ${e.message}\n`);
       return 2;
     }
@@ -134,6 +165,10 @@ export async function main(argv: string[]): Promise<number> {
     if (e instanceof PrivateError) {
       process.stderr.write(`atmo: ${e.message}\n`);
       return 5;
+    }
+    if (e instanceof AuthError) {
+      process.stderr.write(`atmo: ${e.message}\n`);
+      return 6;
     }
     if (e instanceof GuardError) {
       for (const finding of e.findings) {
