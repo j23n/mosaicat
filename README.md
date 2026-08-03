@@ -83,6 +83,10 @@ passphrase.
 
 - [Deploying](docs/deploy.md) — CI, hosting, freshness, backups
 - [The course](docs/learning/) — how this was built, one branch at a time
+- [Design decisions](docs/decisions/map.md) — every decision, its status, and
+  where it's argued
+- [AGENTS.md](AGENTS.md) — conventions and process for contributors, human or
+  agent
 
 ## License
 

@@ -8,3 +8,6 @@ src/templates/decrypt.js
 
 *.log
 .DS_Store
+
+# local worktrees for parallel agent sessions
+.worktrees/

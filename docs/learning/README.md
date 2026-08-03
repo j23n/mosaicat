@@ -19,8 +19,14 @@ You already write code well. The goal is twofold:
 Each branch is stacked on the previous one. Review them **bottom-up, in order**
 (a → k).
 
-- `main` — an empty repository. Nothing but a README and a licence.
-- `learn/a-skeleton` … `learn/k-field-report` — the eleven lessons.
+- `main` — now contains the finished tool: the eleven lessons were merged in
+  order as `--no-ff` merge commits, so each lesson's diff is still readable
+  from its merge commit. To take the course as designed, start from the
+  `learn/` branches, which still exist.
+- `learn/a-skeleton` … `learn/k-field-report` — the eleven lesson branches.
+
+The course is frozen. Ongoing development happens as normal PRs on `main`,
+with decisions recorded in [`docs/decisions/`](../decisions/).
 
 For each:
 
