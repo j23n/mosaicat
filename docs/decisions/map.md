@@ -136,3 +136,18 @@ Statuses: `live` (current truth) · `superseded — k` (corrected by
 | Decision                                                           | Status | Rationale                      | Code                        |
 | ------------------------------------------------------------------ | ------ | ------------------------------ | --------------------------- |
 | ADRs + hand-maintained map + frozen course; normal PRs from `main` | live   | [ADR 001](001-docs-process.md) | `AGENTS.md`, this directory |
+
+### Publish & write
+
+| Decision                                                                              | Status | Rationale                         | Code                                   |
+| ------------------------------------------------------------------------------------- | ------ | --------------------------------- | -------------------------------------- |
+| App-password auth via env, not OAuth (revisit: hosted use)                            | live   | [ADR 002](002-publish-command.md) | `src/write.ts`                         |
+| Per-source `ATMO_APP_PASSWORD_<NAME>` overrides the generic var                       | live   | [ADR 002](002-publish-command.md) | `src/write.ts`                         |
+| TOML `+++` frontmatter, not YAML                                                      | live   | [ADR 002](002-publish-command.md) | `src/frontmatter.ts`                   |
+| rkey writeback into the file, not derived rkeys or a PDS query                        | live   | [ADR 002](002-publish-command.md) | `src/frontmatter.ts`, `src/publish.ts` |
+| Unpublish requires the written-back rkey; `deleteRecord` only                         | live   | [ADR 002](002-publish-command.md) | `src/publish.ts`                       |
+| `content` is a markdown string + always-written `textContent`; blocks writer deferred | live   | [ADR 002](002-publish-command.md) | `src/publish.ts`                       |
+| Publish writes plaintext to the private PDS; encryption stays a build concern         | live   | [ADR 002](002-publish-command.md) | `src/write.ts`, `src/publish.ts`       |
+| `--source` required with >1 source, no default; frontmatter source pinning            | live   | [ADR 002](002-publish-command.md) | `src/publish.ts`, `src/cli.ts`         |
+| Strict parsing for operator input, unlike tolerant record parsing                     | live   | [ADR 002](002-publish-command.md) | `src/frontmatter.ts`                   |
+| Exit code 6 = auth                                                                    | live   | [ADR 002](002-publish-command.md) | `src/cli.ts`, `src/write.ts`           |
