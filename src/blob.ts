@@ -101,7 +101,7 @@ export async function fetchBlob(
 ): Promise<BlobRecord | null> {
   for (const name of existing) {
     if (name.startsWith(`${cid}.`)) {
-      const mimeType = mimeFromFilename(name);
+      const mimeType = mimeForFilename(name);
       return { cid, mimeType, bytes: 0 };
     }
   }
@@ -135,12 +135,16 @@ export async function fetchBlob(
   }
 }
 
-function mimeFromFilename(name: string): string {
-  const ext = name.slice(name.lastIndexOf(".") + 1);
-  for (const [mime, candidate] of Object.entries(EXTENSIONS)) {
-    if (candidate === ext) return mime;
-  }
-  return "application/octet-stream";
+/** Reverse of EXTENSIONS, plus the aliases the forward map collapses. */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  jpeg: "image/jpeg",
+  ...Object.fromEntries(Object.entries(EXTENSIONS).map(([mime, ext]) => [ext, mime])),
+};
+
+/** MIME type inferred from a filename's extension. Unknown -> octet-stream. */
+export function mimeForFilename(name: string): string {
+  const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+  return MIME_BY_EXTENSION[ext] ?? "application/octet-stream";
 }
 
 /**

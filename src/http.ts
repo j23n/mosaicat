@@ -150,3 +150,84 @@ export async function getJson<T = unknown>(url: string, options: GetJsonOptions 
     throw new HttpError(`${target.host} returned invalid JSON`);
   }
 }
+
+export interface PostOptions {
+  /** Extra request headers — an Authorization bearer, typically. */
+  headers?: Record<string, string>;
+  timeoutMs?: number;
+  /** False for operator-configured endpoints (a private PDS is legitimate). */
+  requirePublic?: boolean;
+  fetcher?: Fetcher;
+  dnsLookup?: Lookup;
+}
+
+/**
+ * POST a body and parse the JSON response. Same posture as `getJson`: the
+ * public-address check runs first, redirects are refused, non-2xx is an
+ * `HttpError` carrying the status. An empty 2xx body (deleteRecord) resolves
+ * to `undefined`.
+ */
+async function postRaw<T>(
+  url: string,
+  body: string | Uint8Array,
+  contentType: string,
+  options: PostOptions,
+): Promise<T> {
+  const {
+    headers = {},
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    requirePublic = true,
+    fetcher = globalThis.fetch,
+    dnsLookup,
+  } = options;
+
+  const target = new URL(url);
+  if (requirePublic) await assertPublicUrl(target.toString(), dnsLookup);
+
+  let response: Response;
+  try {
+    response = await fetcher(target, {
+      method: "POST",
+      redirect: "manual",
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: { accept: "application/json", "content-type": contentType, ...headers },
+      body,
+    });
+  } catch (e) {
+    throw new HttpError(`request to ${target.host} failed: ${(e as Error).message}`);
+  }
+
+  if (response.status >= 300 && response.status < 400) {
+    throw new HttpError(`refusing redirect from ${target.host}`, response.status);
+  }
+  if (!response.ok) {
+    throw new HttpError(`${target.host} returned ${response.status}`, response.status);
+  }
+
+  const text = await response.text();
+  if (text === "") return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new HttpError(`${target.host} returned invalid JSON`);
+  }
+}
+
+/** POST a JSON body. */
+export async function postJson<T = unknown>(
+  url: string,
+  body: unknown,
+  options: PostOptions = {},
+): Promise<T> {
+  return postRaw<T>(url, JSON.stringify(body), "application/json", options);
+}
+
+/** POST raw bytes (uploadBlob) with an explicit content type. */
+export async function postBytes<T = unknown>(
+  url: string,
+  body: Uint8Array,
+  contentType: string,
+  options: PostOptions = {},
+): Promise<T> {
+  return postRaw<T>(url, body, contentType, options);
+}

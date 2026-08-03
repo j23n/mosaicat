@@ -124,15 +124,20 @@ export function renderBody(content: string, format: BodyFormat): string {
   }
 }
 
-/** First `limit` characters of the body as plain text, for summaries/feeds. */
-export function excerpt(content: string, limit = 200): string {
-  const text = content
+/** Markdown reduced to plain text: no fences, images, links, or list markers. */
+export function stripMarkdown(content: string): string {
+  return content
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[#>*_`~-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** First `limit` characters of the body as plain text, for summaries/feeds. */
+export function excerpt(content: string, limit = 200): string {
+  const text = stripMarkdown(content);
   if (text.length <= limit) return text;
   return `${text.slice(0, text.lastIndexOf(" ", limit) || limit).trimEnd()}…`;
 }
