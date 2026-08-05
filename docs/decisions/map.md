@@ -13,16 +13,16 @@ Statuses: `live` (current truth) · `superseded — k` (corrected by
 
 ### Language & tooling
 
-| Decision                                                                                  | Status | Rationale                                                                                    | Code                                        |
-| ----------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| TypeScript, not Go — despite Hugo's single-binary appeal                                  | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | repo-wide                                   |
-| TOML for config, not JSON or YAML                                                         | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/config.ts`                             |
-| zod for config validation, not hand-written checks                                        | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/config.ts`                             |
-| `node:util` `parseArgs`, not commander/yargs                                              | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/cli.ts`                                |
-| `doctor` exists from the first branch                                                     | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/cli.ts`                                |
-| `noUncheckedIndexedAccess` (and friends) on                                               | live   | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `tsconfig.json`                             |
-| One config loader; modules take the parsed object, no ambient state                       | live   | [a §background](../learning/a-skeleton.md#background-two-decisions-made-before-any-features) | `src/config.ts`                             |
-| `pull` and `build` are separate commands — the most consequential decision in the project | live   | [a §background](../learning/a-skeleton.md#background-two-decisions-made-before-any-features) | `src/cli.ts`, `src/pull.ts`, `src/build.ts` |
+| Decision                                                                                  | Status         | Rationale                                                                                    | Code                                        |
+| ----------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| TypeScript, not Go — despite Hugo's single-binary appeal                                  | amended by 004 | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | repo-wide                                   |
+| TOML for config, not JSON or YAML                                                         | live           | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/config.ts`                             |
+| zod for config validation, not hand-written checks                                        | live           | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/config.ts`                             |
+| `node:util` `parseArgs`, not commander/yargs                                              | live           | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/cli.ts`                                |
+| `doctor` exists from the first branch                                                     | live           | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `src/cli.ts`                                |
+| `noUncheckedIndexedAccess` (and friends) on                                               | live           | [a §decisions](../learning/a-skeleton.md#design-decisions--why-not-x)                        | `tsconfig.json`                             |
+| One config loader; modules take the parsed object, no ambient state                       | live           | [a §background](../learning/a-skeleton.md#background-two-decisions-made-before-any-features) | `src/config.ts`                             |
+| `pull` and `build` are separate commands — the most consequential decision in the project | live           | [a §background](../learning/a-skeleton.md#background-two-decisions-made-before-any-features) | `src/cli.ts`, `src/pull.ts`, `src/build.ts` |
 
 ### Network & pull
 
@@ -114,13 +114,14 @@ Statuses: `live` (current truth) · `superseded — k` (corrected by
 
 ### Packaging & docs
 
-| Decision                                               | Status | Rationale                                                            | Code             |
-| ------------------------------------------------------ | ------ | -------------------------------------------------------------------- | ---------------- |
-| `init <handle>` is a positional argument, not a prompt | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`    |
-| `init` refuses to overwrite without `--force`          | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`    |
-| `init` appends to `.gitignore` rather than writing it  | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`    |
-| `docs/deploy.md` is separate from the README           | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `docs/deploy.md` |
-| The README describes the tool, not the journey         | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `README.md`      |
+| Decision                                                 | Status | Rationale                                                            | Code                                               |
+| -------------------------------------------------------- | ------ | -------------------------------------------------------------------- | -------------------------------------------------- |
+| `init <handle>` is a positional argument, not a prompt   | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`                                      |
+| `init` refuses to overwrite without `--force`            | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`                                      |
+| `init` appends to `.gitignore` rather than writing it    | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `src/init.ts`                                      |
+| `docs/deploy.md` is separate from the README             | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `docs/deploy.md`                                   |
+| The README describes the tool, not the journey           | live   | [j §decisions](../learning/j-ship-it.md#design-decisions--why-not-x) | `README.md`                                        |
+| Ship as Bun-compiled binary; npm is the contributor path | live   | [ADR 004](004-bun-binary-distribution.md)                            | `scripts/pack.sh`, `.github/workflows/release.yml` |
 
 ### Field-test corrections (the superseding side)
 
@@ -133,9 +134,10 @@ Statuses: `live` (current truth) · `superseded — k` (corrected by
 
 ### Post-course (ADRs)
 
-| Decision                                                           | Status | Rationale                      | Code                        |
-| ------------------------------------------------------------------ | ------ | ------------------------------ | --------------------------- |
-| ADRs + hand-maintained map + frozen course; normal PRs from `main` | live   | [ADR 001](001-docs-process.md) | `AGENTS.md`, this directory |
+| Decision                                                                            | Status | Rationale                                 | Code                                  |
+| ----------------------------------------------------------------------------------- | ------ | ----------------------------------------- | ------------------------------------- |
+| ADRs + hand-maintained map + frozen course; normal PRs from `main`                  | live   | [ADR 001](001-docs-process.md)            | `AGENTS.md`, this directory           |
+| Bun `--compile` + `--asset` for end-user binaries; canary until `--asset` is stable | live   | [ADR 004](004-bun-binary-distribution.md) | `scripts/pack.sh`, `src/copy-file.ts` |
 
 ### Publish & write
 

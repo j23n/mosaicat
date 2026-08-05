@@ -1,0 +1,41 @@
+# PR / main smoke: compile a native linux binary and exercise --help / --version
+# plus a one-record build, so template embedding and the bunfs copyFile fallback
+# stay green without waiting for a release tag.
+
+name: Pack
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  pack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: canary
+
+      - run: npm ci
+
+      - name: Pack native binary
+        run: npm run pack -- --outfile dist-bin/atmo
+
+      - name: Smoke --help / --version
+        run: |
+          ./dist-bin/atmo --version
+          ./dist-bin/atmo --help | head -n 20
+
+      - name: Build TypeScript (for cache helper in smoke)
+        run: npm run build
+
+      - name: Smoke build (embedded templates)
+        run: node scripts/pack-smoke.mjs

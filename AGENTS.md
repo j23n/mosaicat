@@ -14,16 +14,21 @@ no framework.
 npm ci                          # install (what CI uses)
 npm run atmo -- <cmd>           # run the CLI from source; the -- is REQUIRED
                                 #   subcommands: init <handle> | pull | build | doctor
+                                #   | publish | unpublish
 npm test                        # vitest run (pretest bundles the client decrypt script)
 npx vitest run tests/guard.test.ts   # a single test file — skips that pretest bundle;
                                 #   if private/crypto tests miss decrypt.js, `npm run bundle` once
 npm run typecheck               # TWO tsconfigs (main + client); both must pass
 npm run lint                    # prettier --check only — it also checks .md files,
                                 #   so run `npx prettier --write` on anything you touch
+npm run pack                    # Bun --compile binary into dist-bin/ (needs Bun with --asset;
+                                #   canary ≥ 1.4 today — see ADR 004)
 ```
 
-CI (`.github/workflows/ci.yml`) runs exactly typecheck + lint + test on
-Node 20 and 22. Green CI is the merge bar.
+CI (`.github/workflows/ci.yml`) runs typecheck + lint + test on Node 20 and 22.
+Pack smoke (`.github/workflows/pack.yml`) compiles a native binary on PRs.
+Release tags `v*` build binaries on a native OS matrix
+(`.github/workflows/release.yml`). Green CI is the merge bar.
 
 ## Where truth lives
 
@@ -115,7 +120,7 @@ shrunk ≥ 50% vs the last manifest (`SHRINK_THRESHOLD`, `src/guard.ts`).
 | Client-side reactions             | `src/templates/reactions.js`                               | g      | Reactions               |
 | Cache, guards, doctor, exit codes | `src/guard.ts`, `src/cache.ts`                             | h      | Build integrity         |
 | Private posts / crypto            | `src/crypto.ts`, `src/private.ts`, `src/client/decrypt.ts` | i      | Private & crypto        |
-| init / packaging                  | `src/init.ts`                                              | j      | Packaging & docs        |
+| init / packaging                  | `src/init.ts`, `scripts/pack.sh`, `src/copy-file.ts`       | j, 004 | Packaging & docs        |
 
 ## Doc hygiene
 

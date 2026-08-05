@@ -12,6 +12,7 @@ import { BLOB_DIR, blobFilename } from "./blob.js";
 import { dirname, join } from "node:path";
 import type { Config } from "./config.js";
 import { collectionHeading, templateCandidates } from "./collection.js";
+import { copyFile } from "./copy-file.js";
 import { renderFeed, renderRobots, renderSitemap } from "./feed.js";
 import {
   GuardError,
@@ -165,6 +166,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
       items: collection.items,
       nsid: collection.nsid,
       heading,
+      reactions: config.reactions,
     });
     await emitPage(
       collection.url,
@@ -186,7 +188,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
   const cssSource = renderer.resolveTemplate("atmo.css");
   const cssTarget = join(config.out_dir, "assets", "atmo.css");
   await mkdir(dirname(cssTarget), { recursive: true });
-  await cp(cssSource, cssTarget);
+  await copyFile(cssSource, cssTarget);
   written.push("/assets/atmo.css");
 
   const privatePages = privatePagesOf(config, site);
@@ -204,7 +206,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
     const decryptSource = renderer.resolveTemplate("decrypt.js");
     const decryptTarget = join(config.out_dir, "assets", "decrypt.js");
     await mkdir(dirname(decryptTarget), { recursive: true });
-    await cp(decryptSource, decryptTarget);
+    await copyFile(decryptSource, decryptTarget);
     written.push("/assets/decrypt.js");
     log(`${emitted.posts} private page(s) encrypted`);
   }
@@ -213,7 +215,7 @@ export async function build(config: Config, options: BuildOptions = {}): Promise
     const source = renderer.resolveTemplate("reactions.js");
     const target = join(config.out_dir, "assets", "reactions.js");
     await mkdir(dirname(target), { recursive: true });
-    await cp(source, target);
+    await copyFile(source, target);
     written.push("/assets/reactions.js");
   }
 

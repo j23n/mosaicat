@@ -7,7 +7,12 @@ Personal Data Server — posts, and anything else the account's other apps have
 written there. No database, no server, no CMS.
 
 ```bash
-npm install -g atmo
+# Binary release (preferred): download `atmo-<os>-<arch>` from GitHub Releases
+# https://github.com/j23n/mosaicat/releases
+
+# Or from source / npm while developing:
+npm install -g atmo           # contributor / Node path
+# npm run pack                # local Bun-compiled binary → dist-bin/atmo
 
 atmo init you.example.com     # writes atmo.toml
 atmo pull                     # fetch records + blobs into .atmo/cache

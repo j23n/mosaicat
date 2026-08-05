@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-bin/
 .atmo/
 atmo.toml
 .atmo/identity
